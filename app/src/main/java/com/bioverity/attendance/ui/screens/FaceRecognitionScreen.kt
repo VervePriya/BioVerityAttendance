@@ -1,3 +1,4 @@
+
 @file:Suppress("UnsafeOptInUsageError")
 
 package com.bioverity.attendance.ui.screens
@@ -65,10 +66,14 @@ fun FaceRecognitionScreen(
         )
     }
 
-    var faceCount by remember { mutableIntStateOf(0) }
+    var faceCount by remember {
+        mutableIntStateOf(0)
+    }
 
     var statusText by remember {
-        mutableStateOf("Position your face inside the camera")
+        mutableStateOf(
+            "Position your face inside the camera"
+        )
     }
 
     var resultText by remember {
@@ -83,6 +88,37 @@ fun FaceRecognitionScreen(
         mutableStateOf<ByteArray?>(null)
     }
 
+    /*
+     * ================================================================
+     * RECOGNIZED EMPLOYEE DETAILS
+     * ================================================================
+     *
+     * These are stored after successful face verification.
+     * They will be used by Check In / Check Out in Step 3.
+     */
+
+    var recognizedPersonId by remember {
+        mutableStateOf<String?>(null)
+    }
+
+    var recognizedPersonName by remember {
+        mutableStateOf<String?>(null)
+    }
+
+    var recognizedConfidence by remember {
+        mutableStateOf(0.0)
+    }
+
+    /*
+     * ================================================================
+     * ATTENDANCE ACTION STATE
+     * ================================================================
+     */
+
+    var attendanceMessage by remember {
+        mutableStateOf("")
+    }
+
     val permissionLauncher =
         rememberLauncherForActivityResult(
             ActivityResultContracts.RequestPermission()
@@ -91,7 +127,8 @@ fun FaceRecognitionScreen(
             hasCameraPermission = granted
 
             if (!granted) {
-                statusText = "Camera permission is required"
+                statusText =
+                    "Camera permission is required"
             }
         }
 
@@ -112,6 +149,12 @@ fun FaceRecognitionScreen(
             cameraExecutor.shutdown()
         }
     }
+
+    /*
+     * ================================================================
+     * FACE VERIFICATION
+     * ================================================================
+     */
 
     fun verifyEmployee() {
 
@@ -150,6 +193,14 @@ fun FaceRecognitionScreen(
         isVerifying = true
 
         resultText = "Verifying..."
+
+        /*
+         * Clear any previous attendance state
+         */
+        recognizedPersonId = null
+        recognizedPersonName = null
+        recognizedConfidence = 0.0
+        attendanceMessage = ""
 
         Thread {
 
@@ -236,6 +287,12 @@ fun FaceRecognitionScreen(
 
                         if (recognized) {
 
+                            val personId =
+                                json.optString(
+                                    "person_id",
+                                    ""
+                                )
+
                             val name =
                                 json.optString(
                                     "name",
@@ -252,6 +309,18 @@ fun FaceRecognitionScreen(
                                 Looper.getMainLooper()
                             ).post {
 
+                                /*
+                                 * Store recognized employee.
+                                 */
+                                recognizedPersonId =
+                                    personId
+
+                                recognizedPersonName =
+                                    name
+
+                                recognizedConfidence =
+                                    confidence
+
                                 resultText =
                                     "✓ Verified\n\n" +
                                             "Employee: $name\n" +
@@ -263,11 +332,12 @@ fun FaceRecognitionScreen(
                                                 )
                                             }"
 
+                                attendanceMessage = ""
+
                                 isVerifying = false
 
                                 onFaceDetected()
                             }
-
                         }
 
                         /*
@@ -313,13 +383,22 @@ fun FaceRecognitionScreen(
                                             }\n\n" +
                                             "Below recognition threshold"
 
+                                /*
+                                 * Do not allow attendance actions
+                                 * for an unverified person.
+                                 */
+                                recognizedPersonId = null
+                                recognizedPersonName = null
+                                recognizedConfidence = 0.0
+                                attendanceMessage = ""
+
                                 isVerifying = false
                             }
                         }
 
                         /*
                          * ====================================================
-                         * NO FACE
+                         * OTHER FACE ERRORS
                          * ====================================================
                          */
 
@@ -355,6 +434,11 @@ fun FaceRecognitionScreen(
                                                     "Reason: $reason"
                                     }
 
+                                recognizedPersonId = null
+                                recognizedPersonName = null
+                                recognizedConfidence = 0.0
+                                attendanceMessage = ""
+
                                 isVerifying = false
                             }
                         }
@@ -374,10 +458,157 @@ fun FaceRecognitionScreen(
                         "Recognition failed:\n" +
                                 "${e.message}"
 
+                    recognizedPersonId = null
+                    recognizedPersonName = null
+                    recognizedConfidence = 0.0
+                    attendanceMessage = ""
+
                     isVerifying = false
                 }
             }
 
+        }.start()
+    }
+
+    fun saveAttendance(attendanceType: String) {
+
+        val personId = recognizedPersonId
+        val personName = recognizedPersonName
+
+        if (personId.isNullOrBlank() || personName.isNullOrBlank()) {
+
+            attendanceMessage =
+                "Employee is not verified"
+
+            return
+        }
+
+        attendanceMessage =
+            "Saving ${attendanceType.replace("_", " ")}..."
+
+        Thread {
+
+            try {
+
+                val client =
+                    OkHttpClient()
+
+                val jsonBody =
+                    JSONObject().apply {
+
+                        put(
+                            "person_id",
+                            personId
+                        )
+
+                        put(
+                            "person_name",
+                            personName
+                        )
+
+                        put(
+                            "attendance_type",
+                            attendanceType
+                        )
+                    }
+
+                val requestBody =
+                    jsonBody
+                        .toString()
+                        .toRequestBody(
+                            "application/json".toMediaType()
+                        )
+
+                val request =
+                    Request.Builder()
+                        .url(
+                            "$FACE_API_URL/attendance"
+                        )
+                        .post(requestBody)
+                        .build()
+
+                println(
+                    "ATTENDANCE_API: Sending $attendanceType"
+                )
+
+                client
+                    .newCall(request)
+                    .execute()
+                    .use { response ->
+
+                        val responseText =
+                            response.body.string()
+
+                        println(
+                            "ATTENDANCE_API: HTTP ${response.code}"
+                        )
+
+                        println(
+                            "ATTENDANCE_API: Response = " +
+                                    responseText
+                        )
+
+                        if (!response.isSuccessful) {
+
+                            throw Exception(
+                                "HTTP ${response.code}: " +
+                                        responseText
+                            )
+                        }
+
+                        val json =
+                            JSONObject(responseText)
+
+                        val success =
+                            json.optBoolean(
+                                "success",
+                                false
+                            )
+
+                        val message =
+                            json.optString(
+                                "message",
+                                ""
+                            )
+
+                        Handler(
+                            Looper.getMainLooper()
+                        ).post {
+
+                            if (success) {
+
+                                attendanceMessage =
+                                    "✓ $message"
+
+                            } else {
+
+                                val reason =
+                                    json.optString(
+                                        "reason",
+                                        "Unknown error"
+                                    )
+
+                                attendanceMessage =
+                                    "Attendance failed:\n$reason"
+                            }
+                        }
+                    }
+
+            } catch (e: Exception) {
+
+                println(
+                    "ATTENDANCE_API ERROR: ${e.message}"
+                )
+
+                Handler(
+                    Looper.getMainLooper()
+                ).post {
+
+                    attendanceMessage =
+                        "Attendance failed:\n" +
+                                "${e.message}"
+                }
+            }
         }.start()
     }
 
@@ -644,7 +875,7 @@ fun FaceRecognitionScreen(
 
                 /*
                  * ============================================================
-                 * RESULT
+                 * RESULT + ATTENDANCE ACTIONS
                  * ============================================================
                  */
 
@@ -658,6 +889,12 @@ fun FaceRecognitionScreen(
                     horizontalAlignment =
                         Alignment.CenterHorizontally
                 ) {
+
+                    /*
+                     * ========================================================
+                     * RECOGNITION RESULT
+                     * ========================================================
+                     */
 
                     if (resultText.isNotEmpty()) {
 
@@ -679,33 +916,135 @@ fun FaceRecognitionScreen(
 
                     /*
                      * ========================================================
-                     * VERIFY BUTTON
+                     * CHECK IN / CHECK OUT
                      * ========================================================
+                     *
+                     * These buttons are intentionally UI-only for now.
+                     * Step 3 will connect them to the Python API.
                      */
 
-                    Button(
-
-                        onClick = {
-                            verifyEmployee()
-                        },
-
-                        enabled =
-                            !isVerifying &&
-                                    faceCount == 1,
-
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .height(52.dp)
+                    if (
+                        recognizedPersonId != null &&
+                        recognizedPersonName != null
                     ) {
 
                         Text(
+                            text =
+                                "Attendance for " +
+                                        recognizedPersonName,
 
-                            if (isVerifying)
-                                "Verifying..."
-                            else
-                                "Verify Employee"
+                            style =
+                                MaterialTheme
+                                    .typography
+                                    .titleMedium
                         )
+
+                        Spacer(
+                            modifier =
+                                Modifier.height(12.dp)
+                        )
+
+                        Button(
+
+                            onClick = {
+
+                                /*
+                                 * Step 3:
+                                 * Call /attendance API
+                                 * with CHECK_IN.
+                                 */
+                                saveAttendance("CHECK_IN")
+
+                            },
+
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .height(52.dp)
+                        ) {
+
+                            Text("Check In")
+                        }
+
+                        Spacer(
+                            modifier =
+                                Modifier.height(12.dp)
+                        )
+
+                        OutlinedButton(
+
+                            onClick = {
+
+                                /*
+                                 * Step 3:
+                                 * Call /attendance API
+                                 * with CHECK_OUT.
+                                 */
+                                saveAttendance("CHECK_OUT")
+
+                            },
+
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .height(52.dp)
+                        ) {
+
+                            Text("Check Out")
+                        }
+
+                        if (
+                            attendanceMessage.isNotEmpty()
+                        ) {
+
+                            Spacer(
+                                modifier =
+                                    Modifier.height(12.dp)
+                            )
+
+                            Text(
+                                text =
+                                    attendanceMessage,
+
+                                style =
+                                    MaterialTheme
+                                        .typography
+                                        .bodyMedium
+                            )
+                        }
+
+                    } else {
+
+                        /*
+                         * ====================================================
+                         * VERIFY BUTTON
+                         * ====================================================
+                         */
+
+                        Button(
+
+                            onClick = {
+                                verifyEmployee()
+                            },
+
+                            enabled =
+                                !isVerifying &&
+                                        faceCount == 1,
+
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .height(52.dp)
+                        ) {
+
+                            Text(
+
+                                if (isVerifying)
+                                    "Verifying..."
+                                else
+                                    "Verify Employee"
+                            )
+                        }
                     }
                 }
             }
@@ -943,3 +1282,4 @@ private fun imageProxyToJpeg(
         null
     }
 }
+
