@@ -1,3 +1,4 @@
+
 package com.bioverity.attendance.navigation
 
 import androidx.compose.runtime.Composable
@@ -7,6 +8,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.platform.LocalContext
+
+import com.bioverity.attendance.data.session.AppSession
 import com.bioverity.attendance.ui.LoginScreen
 import com.bioverity.attendance.ui.screens.AttendanceScreen
 import com.bioverity.attendance.ui.screens.FaceRecognitionScreen
@@ -17,42 +21,69 @@ import com.bioverity.attendance.viewmodel.AttendanceViewModel
 @Composable
 fun AppNavigation() {
 
-    // Temporary login state.
-    // Supabase authentication will replace this later.
+    // ----------------------------------------------------
+    // CONTEXT
+    // ----------------------------------------------------
+
+    val context = LocalContext.current
+
+    // ----------------------------------------------------
+    // LOGIN SESSION
+    // ----------------------------------------------------
+
     var isLoggedIn by remember {
-        mutableStateOf(false)
+        mutableStateOf(
+            AppSession.isLoggedIn(context)
+        )
     }
 
-    // Currently selected bottom navigation tab.
+    // ----------------------------------------------------
+    // TAB
+    // ----------------------------------------------------
+
     var selectedTab by remember {
         mutableIntStateOf(0)
     }
 
-    // Controls the face recognition screen.
+    // ----------------------------------------------------
+    // FACE RECOGNITION
+    // ----------------------------------------------------
+
     var showFaceRecognition by remember {
         mutableStateOf(false)
     }
 
-    val viewModel: AttendanceViewModel = viewModel()
+    // ----------------------------------------------------
+    // ATTENDANCE VIEW MODEL
+    // ----------------------------------------------------
 
-    // ---------------------------------------------------------
-    // LOGIN
-    // ---------------------------------------------------------
+    val attendanceViewModel: AttendanceViewModel = viewModel()
+
+    // ----------------------------------------------------
+    // LOGIN SCREEN
+    // ----------------------------------------------------
+
     if (!isLoggedIn) {
 
         LoginScreen(
             onLoginSuccess = {
+
+                // LoginViewModel has already saved the
+                // authenticated employee into AppSession.
+
                 isLoggedIn = true
                 selectedTab = 0
+                showFaceRecognition = false
             }
         )
 
         return
     }
 
-    // ---------------------------------------------------------
-    // FACE RECOGNITION
-    // ---------------------------------------------------------
+    // ----------------------------------------------------
+    // FACE RECOGNITION SCREEN
+    // ----------------------------------------------------
+
     if (showFaceRecognition) {
 
         FaceRecognitionScreen(
@@ -60,42 +91,68 @@ fun AppNavigation() {
                 showFaceRecognition = false
             },
             onFaceDetected = {
-                // Actual employee face recognition
-                // will be connected later.
+
+                // Keep existing face-recognition
+                // behaviour unchanged for now.
+
             }
         )
 
         return
     }
 
-    // ---------------------------------------------------------
-    // MAIN APP
-    // ---------------------------------------------------------
+    // ----------------------------------------------------
+    // MAIN APPLICATION
+    // ----------------------------------------------------
+
     when (selectedTab) {
 
+        // =================================================
         // HOME
-        0 -> HomeScreen(
-            viewModel = viewModel,
-            onNavigate = {
-                selectedTab = it
-            }
-        )
+        // =================================================
 
+        0 -> {
+
+            HomeScreen(
+                viewModel = attendanceViewModel,
+
+                onNavigate = {
+                    selectedTab = it
+                }
+            )
+        }
+
+        // =================================================
         // ATTENDANCE
-        1 -> AttendanceScreen(
-            onNavigate = {
-                selectedTab = it
-            },
-            onFaceRecognition = {
-                showFaceRecognition = true
-            }
-        )
+        // =================================================
 
+        1 -> {
+
+            AttendanceScreen(
+                onNavigate = {
+                    selectedTab = it
+                },
+
+                onFaceRecognition = {
+                    showFaceRecognition = true
+                }
+            )
+        }
+
+        // =================================================
         // PROFILE
-        2 -> ProfileScreen(
-            onNavigate = {
-                selectedTab = it
-            }
-        )
+        // =================================================
+
+        2 -> {
+
+            ProfileScreen(
+                personId = AppSession.getPersonId(context),
+
+                onNavigate = {
+                    selectedTab = it
+                }
+            )
+        }
     }
 }
+

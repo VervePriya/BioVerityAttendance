@@ -1,4 +1,3 @@
-
 package com.bioverity.attendance.ui
 
 import androidx.compose.foundation.background
@@ -13,17 +12,20 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material.icons.filled.Email
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -36,22 +38,33 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.bioverity.attendance.ui.screens.login.LoginViewModel
 
 @Composable
 fun LoginScreen(
-    onLoginSuccess: () -> Unit
+    onLoginSuccess: () -> Unit,
+    viewModel: LoginViewModel = viewModel()
 ) {
 
-    var email by remember {
-        mutableStateOf("")
-    }
-
-    var password by remember {
-        mutableStateOf("")
-    }
+    val uiState by viewModel.uiState.collectAsState()
 
     var passwordVisible by remember {
         mutableStateOf(false)
+    }
+
+    /*
+     * Navigate to Home ONLY after the ViewModel
+     * confirms that login was successful.
+     */
+    LaunchedEffect(uiState.loginSuccess) {
+
+        if (uiState.loginSuccess) {
+
+            onLoginSuccess()
+
+            viewModel.clearLoginSuccess()
+        }
     }
 
     Box(
@@ -68,7 +81,10 @@ fun LoginScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
-            // App logo placeholder
+            // ========================================================
+            // LOGO
+            // ========================================================
+
             Box(
                 modifier = Modifier
                     .size(76.dp)
@@ -78,6 +94,7 @@ fun LoginScreen(
                     ),
                 contentAlignment = Alignment.Center
             ) {
+
                 Text(
                     text = "B",
                     color = Color.White,
@@ -113,14 +130,18 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(36.dp))
 
-            // Email
+            // ========================================================
+            // EMAIL
+            // ========================================================
+
             OutlinedTextField(
-                value = email,
+                value = uiState.email,
                 onValueChange = {
-                    email = it
+                    viewModel.updateEmail(it)
                 },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
+                enabled = !uiState.isLoading,
                 label = {
                     Text("Email / Employee ID")
                 },
@@ -133,19 +154,24 @@ fun LoginScreen(
                         contentDescription = "Email"
                     )
                 },
-                shape = RoundedCornerShape(14.dp)
+                shape = RoundedCornerShape(14.dp),
+                isError = uiState.errorMessage != null
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Password
+            // ========================================================
+            // PASSWORD
+            // ========================================================
+
             OutlinedTextField(
-                value = password,
+                value = uiState.password,
                 onValueChange = {
-                    password = it
+                    viewModel.updatePassword(it)
                 },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
+                enabled = !uiState.isLoading,
                 label = {
                     Text("Password")
                 },
@@ -163,7 +189,8 @@ fun LoginScreen(
                     IconButton(
                         onClick = {
                             passwordVisible = !passwordVisible
-                        }
+                        },
+                        enabled = !uiState.isLoading
                     ) {
 
                         Icon(
@@ -173,7 +200,12 @@ fun LoginScreen(
                                 } else {
                                     Icons.Default.Visibility
                                 },
-                            contentDescription = "Show password"
+                            contentDescription =
+                                if (passwordVisible) {
+                                    "Hide password"
+                                } else {
+                                    "Show password"
+                                }
                         )
                     }
                 },
@@ -183,8 +215,29 @@ fun LoginScreen(
                     } else {
                         PasswordVisualTransformation()
                     },
-                shape = RoundedCornerShape(14.dp)
+                shape = RoundedCornerShape(14.dp),
+                isError = uiState.errorMessage != null
             )
+
+            // ========================================================
+            // ERROR MESSAGE
+            // ========================================================
+
+            if (uiState.errorMessage != null) {
+
+                Spacer(
+                    modifier = Modifier.height(8.dp)
+                )
+
+                Text(
+                    text = uiState.errorMessage!!,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 4.dp),
+                    color = Color(0xFFDC2626),
+                    fontSize = 13.sp
+                )
+            }
 
             Spacer(modifier = Modifier.height(10.dp))
 
@@ -200,26 +253,40 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
+            // ========================================================
+            // LOGIN BUTTON
+            // ========================================================
+
             Button(
                 onClick = {
-                    // Temporary login.
-                    // Supabase authentication will replace this later.
-                    onLoginSuccess()
+                    viewModel.login()
                 },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(54.dp),
+                enabled = !uiState.isLoading,
                 shape = RoundedCornerShape(14.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFF2563EB)
                 )
             ) {
 
-                Text(
-                    text = "LOGIN",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold
-                )
+                if (uiState.isLoading) {
+
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(22.dp),
+                        color = Color.White,
+                        strokeWidth = 2.dp
+                    )
+
+                } else {
+
+                    Text(
+                        text = "LOGIN",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(28.dp))
@@ -232,4 +299,3 @@ fun LoginScreen(
         }
     }
 }
-
