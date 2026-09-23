@@ -45,6 +45,8 @@ import org.json.JSONObject
 import java.io.ByteArrayOutputStream
 import java.util.Locale
 import java.util.concurrent.Executors
+import com.bioverity.attendance.viewmodel.AttendanceViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 private const val FACE_API_URL = "http://127.0.0.1:8000"
 
@@ -52,8 +54,11 @@ private const val FACE_API_URL = "http://127.0.0.1:8000"
 @Composable
 fun FaceRecognitionScreen(
     onBack: () -> Unit,
-    onFaceDetected: () -> Unit
+    onFaceDetected: () -> Unit,
+    attendanceViewModel: AttendanceViewModel
 ) {
+    val todayAttendance by
+    attendanceViewModel.todayAttendance.collectAsState()
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
@@ -477,8 +482,7 @@ fun FaceRecognitionScreen(
 
         if (personId.isNullOrBlank() || personName.isNullOrBlank()) {
 
-            attendanceMessage =
-                "Employee is not verified"
+            attendanceMessage = "Employee is not verified"
 
             return
         }
@@ -490,8 +494,7 @@ fun FaceRecognitionScreen(
 
             try {
 
-                val client =
-                    OkHttpClient()
+                val client = OkHttpClient()
 
                 val jsonBody =
                     JSONObject().apply {
@@ -544,15 +547,13 @@ fun FaceRecognitionScreen(
                         )
 
                         println(
-                            "ATTENDANCE_API: Response = " +
-                                    responseText
+                            "ATTENDANCE_API: Response = $responseText"
                         )
 
                         if (!response.isSuccessful) {
 
                             throw Exception(
-                                "HTTP ${response.code}: " +
-                                        responseText
+                                "HTTP ${response.code}: $responseText"
                             )
                         }
 
@@ -577,8 +578,30 @@ fun FaceRecognitionScreen(
 
                             if (success) {
 
+                                /*
+                                 * ==================================================
+                                 * IMPORTANT
+                                 *
+                                 * Update the SAME AttendanceViewModel that the
+                                 * Attendance screen is observing.
+                                 * ==================================================
+                                 */
+                                attendanceViewModel.markAttendance()
+
                                 attendanceMessage =
-                                    "✓ $message"
+                                    if (message.isNotBlank()) {
+                                        "✓ $message"
+                                    } else {
+                                        "✓ ${attendanceType.replace("_", " ")} successful"
+                                    }
+
+                                /*
+                                 * Clear recognition state so the next visit
+                                 * requires a fresh face verification.
+                                 */
+                                recognizedPersonId = null
+                                recognizedPersonName = null
+                                recognizedConfidence = 0.0
 
                             } else {
 
@@ -605,10 +628,10 @@ fun FaceRecognitionScreen(
                 ).post {
 
                     attendanceMessage =
-                        "Attendance failed:\n" +
-                                "${e.message}"
+                        "Attendance failed:\n${e.message}"
                 }
             }
+
         }.start()
     }
 
@@ -922,104 +945,135 @@ fun FaceRecognitionScreen(
                      * These buttons are intentionally UI-only for now.
                      * Step 3 will connect them to the Python API.
                      */
-
                     if (
                         recognizedPersonId != null &&
                         recognizedPersonName != null
                     ) {
 
                         Text(
-                            text =
-                                "Attendance for " +
-                                        recognizedPersonName,
-
-                            style =
-                                MaterialTheme
-                                    .typography
-                                    .titleMedium
+                            text = "Attendance for $recognizedPersonName",
+                            style = MaterialTheme.typography.titleMedium
                         )
 
                         Spacer(
-                            modifier =
-                                Modifier.height(12.dp)
+                            modifier = Modifier.height(12.dp)
                         )
 
-                        Button(
+                        when {
 
-                            onClick = {
+                            /*
+                             * ============================================================
+                             * NO CHECK IN YET
+                             * ============================================================
+                             */
+                            todayAttendance.checkIn == null -> {
 
-                                /*
-                                 * Step 3:
-                                 * Call /attendance API
-                                 * with CHECK_IN.
-                                 */
-                                saveAttendance("CHECK_IN")
+                                Button(
 
-                            },
+                                    onClick = {
+                                        saveAttendance("CHECK_IN")
+                                    },
 
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .height(52.dp)
-                        ) {
+                                    enabled = attendanceMessage.isEmpty() ||
+                                            !attendanceMessage.contains("Saving"),
 
-                            Text("Check In")
+                                    modifier =
+                                        Modifier
+                                            .fillMaxWidth()
+                                            .height(52.dp)
+
+                                ) {
+
+                                    Text("Check In")
+                                }
+                            }
+
+                            /*
+                             * ============================================================
+                             * CHECK IN EXISTS, CHECK OUT NOT YET DONE
+                             * ============================================================
+                             */
+                            todayAttendance.checkOut == null -> {
+
+                                Text(
+                                    text =
+                                        "Checked in at ${todayAttendance.checkIn}",
+                                    style =
+                                        MaterialTheme.typography.bodyLarge
+                                )
+
+                                Spacer(
+                                    modifier = Modifier.height(12.dp)
+                                )
+
+                                OutlinedButton(
+
+                                    onClick = {
+                                        saveAttendance("CHECK_OUT")
+                                    },
+
+                                    enabled = attendanceMessage.isEmpty() ||
+                                            !attendanceMessage.contains("Saving"),
+
+                                    modifier =
+                                        Modifier
+                                            .fillMaxWidth()
+                                            .height(52.dp)
+
+                                ) {
+
+                                    Text("Check Out")
+                                }
+                            }
+
+                            /*
+                             * ============================================================
+                             * BOTH COMPLETED
+                             * ============================================================
+                             */
+                            else -> {
+
+                                Text(
+                                    text = "Today's attendance completed",
+                                    style =
+                                        MaterialTheme.typography.titleMedium
+                                )
+
+                                Spacer(
+                                    modifier = Modifier.height(8.dp)
+                                )
+
+                                Text(
+                                    text =
+                                        "Check In: ${todayAttendance.checkIn}"
+                                )
+
+                                Text(
+                                    text =
+                                        "Check Out: ${todayAttendance.checkOut}"
+                                )
+
+                                Text(
+                                    text =
+                                        "Hours: ${todayAttendance.workingHours}"
+                                )
+                            }
                         }
 
-                        Spacer(
-                            modifier =
-                                Modifier.height(12.dp)
-                        )
-
-                        OutlinedButton(
-
-                            onClick = {
-
-                                /*
-                                 * Step 3:
-                                 * Call /attendance API
-                                 * with CHECK_OUT.
-                                 */
-                                saveAttendance("CHECK_OUT")
-
-                            },
-
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .height(52.dp)
-                        ) {
-
-                            Text("Check Out")
-                        }
-
-                        if (
-                            attendanceMessage.isNotEmpty()
-                        ) {
+                        if (attendanceMessage.isNotEmpty()) {
 
                             Spacer(
-                                modifier =
-                                    Modifier.height(12.dp)
+                                modifier = Modifier.height(12.dp)
                             )
 
                             Text(
-                                text =
-                                    attendanceMessage,
-
+                                text = attendanceMessage,
                                 style =
-                                    MaterialTheme
-                                        .typography
-                                        .bodyMedium
+                                    MaterialTheme.typography.bodyMedium
                             )
                         }
 
                     } else {
-
-                        /*
-                         * ====================================================
-                         * VERIFY BUTTON
-                         * ====================================================
-                         */
 
                         Button(
 
@@ -1035,10 +1089,10 @@ fun FaceRecognitionScreen(
                                 Modifier
                                     .fillMaxWidth()
                                     .height(52.dp)
+
                         ) {
 
                             Text(
-
                                 if (isVerifying)
                                     "Verifying..."
                                 else
@@ -1046,11 +1100,24 @@ fun FaceRecognitionScreen(
                             )
                         }
                     }
+
+
+
+
+
+
+
+
+
+
+
+
+                    }
                 }
             }
         }
     }
-}
+
 
 
 /* ========================================================================

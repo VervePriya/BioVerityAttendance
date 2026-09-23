@@ -1,12 +1,28 @@
+
 package com.bioverity.attendance.viewmodel
 
 import androidx.lifecycle.ViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import com.bioverity.attendance.data.model.AttendanceRecord
 import com.bioverity.attendance.data.model.Employee
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import java.time.Duration
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.LocalTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 class AttendanceViewModel : ViewModel() {
+
+    private val sriLankaZone = ZoneId.of("Asia/Colombo")
+
+    private val timeFormatter =
+        DateTimeFormatter.ofPattern("hh:mm a", Locale.ENGLISH)
+
+    private val dateFormatter =
+        DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.ENGLISH)
 
     private val _employee = MutableStateFlow(
         Employee(
@@ -21,7 +37,7 @@ class AttendanceViewModel : ViewModel() {
 
     private val _todayAttendance = MutableStateFlow(
         AttendanceRecord(
-            date = "16 Sep 2026",
+            date = LocalDate.now(sriLankaZone).format(dateFormatter),
             checkIn = null,
             checkOut = null,
             status = "Not Marked",
@@ -33,39 +49,110 @@ class AttendanceViewModel : ViewModel() {
         _todayAttendance
 
     private val _recentAttendance = MutableStateFlow(
-        listOf(
-            AttendanceRecord(
-                "15 Sep 2026",
-                "08:42 AM",
-                "06:03 PM",
-                "Present",
-                "09h 21m"
-            ),
-            AttendanceRecord(
-                "14 Sep 2026",
-                "08:37 AM",
-                "05:58 PM",
-                "Present",
-                "09h 21m"
-            ),
-            AttendanceRecord(
-                "13 Sep 2026",
-                "09:12 AM",
-                "06:01 PM",
-                "Late",
-                "08h 49m"
-            )
-        )
+        emptyList<AttendanceRecord>()
     )
 
     val recentAttendance: StateFlow<List<AttendanceRecord>> =
         _recentAttendance
 
+    /**
+     * Call this when face verification is successful.
+     *
+     * First successful verification:
+     *     CHECK IN
+     *
+     * Second successful verification:
+     *     CHECK OUT
+     *
+     * After CHECK OUT:
+     *     working hours are calculated automatically.
+     */
     fun markAttendance() {
-        _todayAttendance.value =
-            _todayAttendance.value.copy(
-                checkIn = "09:56 AM",
-                status = "Checked In"
+
+        val now = LocalDateTime.now(sriLankaZone)
+        val currentTime = now.format(timeFormatter)
+        val currentDate = now.format(dateFormatter)
+
+        val currentAttendance = _todayAttendance.value
+
+        // ---------------------------------------------------------
+        // CHECK IN
+        // ---------------------------------------------------------
+        if (currentAttendance.checkIn == null) {
+
+            _todayAttendance.value = currentAttendance.copy(
+                date = currentDate,
+                checkIn = currentTime,
+                checkOut = null,
+                status = "Checked In",
+                workingHours = "00h 00m"
             )
+
+            return
+        }
+
+        // ---------------------------------------------------------
+        // CHECK OUT
+        // ---------------------------------------------------------
+        if (currentAttendance.checkOut == null) {
+
+            val checkInTime = parseTime(currentAttendance.checkIn)
+
+            if (checkInTime != null) {
+
+                val checkInDateTime =
+                    LocalDateTime.of(
+                        LocalDate.now(sriLankaZone),
+                        checkInTime
+                    )
+
+                val duration =
+                    Duration.between(checkInDateTime, now)
+
+                val totalMinutes =
+                    duration.toMinutes().coerceAtLeast(0)
+
+                val hours = totalMinutes / 60
+                val minutes = totalMinutes % 60
+
+                _todayAttendance.value = currentAttendance.copy(
+                    date = currentDate,
+                    checkOut = currentTime,
+                    status = "Present",
+                    workingHours = String.format(
+                        Locale.ENGLISH,
+                        "%02dh %02dm",
+                        hours,
+                        minutes
+                    )
+                )
+            } else {
+
+                _todayAttendance.value = currentAttendance.copy(
+                    date = currentDate,
+                    checkOut = currentTime,
+                    status = "Present"
+                )
+            }
+
+            return
+        }
+
+        // ---------------------------------------------------------
+        // Already checked in and checked out
+        // ---------------------------------------------------------
+        // Do not create another attendance time accidentally.
+    }
+
+    private fun parseTime(time: String): LocalTime? {
+        return try {
+            LocalTime.parse(
+                time.uppercase(Locale.ENGLISH),
+                timeFormatter
+            )
+        } catch (_: Exception) {
+            null
+        }
     }
 }
+

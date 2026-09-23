@@ -1,4 +1,3 @@
-
 package com.bioverity.attendance.navigation
 
 import androidx.compose.runtime.Composable
@@ -7,8 +6,8 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 import com.bioverity.attendance.data.session.AppSession
 import com.bioverity.attendance.ui.LoginScreen
@@ -20,6 +19,17 @@ import com.bioverity.attendance.viewmodel.AttendanceViewModel
 
 @Composable
 fun AppNavigation() {
+
+    // ----------------------------------------------------
+    // ATTENDANCE VIEW MODEL
+    // ----------------------------------------------------
+
+    // IMPORTANT:
+    // This single instance is shared by:
+    // Home
+    // Attendance
+    // Face Recognition
+    val attendanceViewModel: AttendanceViewModel = viewModel()
 
     // ----------------------------------------------------
     // CONTEXT
@@ -54,12 +64,6 @@ fun AppNavigation() {
     }
 
     // ----------------------------------------------------
-    // ATTENDANCE VIEW MODEL
-    // ----------------------------------------------------
-
-    val attendanceViewModel: AttendanceViewModel = viewModel()
-
-    // ----------------------------------------------------
     // LOGIN SCREEN
     // ----------------------------------------------------
 
@@ -87,15 +91,19 @@ fun AppNavigation() {
     if (showFaceRecognition) {
 
         FaceRecognitionScreen(
+
             onBack = {
                 showFaceRecognition = false
             },
+
             onFaceDetected = {
+                // Existing face-recognition behaviour
+            },
 
-                // Keep existing face-recognition
-                // behaviour unchanged for now.
-
-            }
+            // IMPORTANT:
+            // Pass the SAME AttendanceViewModel used
+            // by the Attendance screen.
+            attendanceViewModel = attendanceViewModel
         )
 
         return
@@ -129,6 +137,9 @@ fun AppNavigation() {
         1 -> {
 
             AttendanceScreen(
+
+                viewModel = attendanceViewModel,
+
                 onNavigate = {
                     selectedTab = it
                 },
@@ -146,6 +157,7 @@ fun AppNavigation() {
         2 -> {
 
             ProfileScreen(
+
                 personId = AppSession.getPersonId(context),
 
                 onNavigate = {
@@ -155,4 +167,3 @@ fun AppNavigation() {
         }
     }
 }
-
