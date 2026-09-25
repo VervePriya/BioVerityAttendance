@@ -1,12 +1,10 @@
-
 package com.bioverity.attendance.ui.screens
 
 import android.Manifest
+import android.util.Log
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.lifecycle.viewmodel.compose.viewModel
-
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -23,11 +21,13 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccessTime
+import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.NotificationsNone
-
+import androidx.compose.material.icons.filled.Verified
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -36,25 +36,21 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-
 import coil.compose.AsyncImage
-
 import com.bioverity.attendance.ui.components.AttendanceStatusCard
 import com.bioverity.attendance.ui.components.AttendanceSummaryCard
 import com.bioverity.attendance.ui.components.BottomNavigationBar
 import com.bioverity.attendance.ui.components.RecentAttendanceItem
-
 import com.bioverity.attendance.ui.theme.Background
 import com.bioverity.attendance.ui.theme.CardWhite
 import com.bioverity.attendance.ui.theme.Navy
@@ -64,11 +60,9 @@ import com.bioverity.attendance.ui.theme.Teal
 import com.bioverity.attendance.ui.theme.TealLight
 import com.bioverity.attendance.ui.theme.TextPrimary
 import com.bioverity.attendance.ui.theme.TextSecondary
-
 import com.bioverity.attendance.viewmodel.AttendanceViewModel
 import com.bioverity.attendance.viewmodel.LocationUiState
 import com.bioverity.attendance.viewmodel.LocationViewModel
-
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
@@ -78,31 +72,18 @@ import java.time.format.DateTimeFormatter
 fun HomeScreen(
     viewModel: AttendanceViewModel,
     onNavigate: (Int) -> Unit,
-    locationViewModel: LocationViewModel = viewModel()
+    locationViewModel: LocationViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
 ) {
-
     val employee by viewModel.employee.collectAsState()
-
     val attendance by viewModel.todayAttendance.collectAsState()
-
     val recentAttendance by viewModel.recentAttendance.collectAsState()
-    val monthlyAttendance by
-    viewModel.monthlyAttendance.collectAsState()
-
+    val monthlyAttendance by viewModel.monthlyAttendance.collectAsState()
     val locationState by locationViewModel.locationState.collectAsState()
 
-    // =========================================================
-    // DEBUG - LOGGED IN EMPLOYEE
-    // =========================================================
-
-    android.util.Log.d(
+    Log.d(
         "HOME_EMPLOYEE",
         "name=${employee.name}, imageUrl=${employee.imageUrl}"
     )
-
-    // =========================================================
-    // LOCATION PERMISSION
-    // =========================================================
 
     val permissionLauncher =
         rememberLauncherForActivityResult(
@@ -110,12 +91,8 @@ fun HomeScreen(
         ) { permissions ->
 
             val granted =
-                permissions[
-                    Manifest.permission.ACCESS_FINE_LOCATION
-                ] == true ||
-                        permissions[
-                            Manifest.permission.ACCESS_COARSE_LOCATION
-                        ] == true
+                permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+                        permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
 
             if (granted) {
                 locationViewModel.checkLocation()
@@ -131,7 +108,6 @@ fun HomeScreen(
                 onItemSelected = onNavigate
             )
         }
-
     ) { paddingValues ->
 
         Column(
@@ -142,9 +118,7 @@ fun HomeScreen(
                 .padding(horizontal = 20.dp)
         ) {
 
-            Spacer(
-                modifier = Modifier.height(20.dp)
-            )
+            Spacer(modifier = Modifier.height(18.dp))
 
             // =========================================================
             // HEADER
@@ -157,199 +131,102 @@ fun HomeScreen(
             ) {
 
                 Row(
-
                     verticalAlignment = Alignment.CenterVertically
                 ) {
 
-                    // =================================================
-                    // EMPLOYEE PHOTO
-                    // =================================================
-
-                    Box(
-                        modifier = Modifier
-                            .size(52.dp)
-                            .clip(CircleShape)
-                            .background(TealLight),
-                        contentAlignment = Alignment.Center
-                    ) {
-
-                        if (!employee.imageUrl.isNullOrBlank()) {
-
-                            AsyncImage(
-                                model = employee.imageUrl,
-                                contentDescription =
-                                    "${employee.name} profile photo",
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .clip(CircleShape),
-                                contentScale = ContentScale.Crop,
-
-                                onSuccess = {
-
-                                    android.util.Log.d(
-                                        "HOME_IMAGE",
-                                        "IMAGE LOADED SUCCESSFULLY: " +
-                                                employee.imageUrl
-                                    )
-                                },
-
-                                onError = {
-
-                                    android.util.Log.e(
-                                        "HOME_IMAGE",
-                                        "IMAGE LOAD FAILED: " +
-                                                employee.imageUrl +
-                                                " | " +
-                                                it.result.throwable
-                                    )
-                                }
-                            )
-
-                        } else {
-
-                            Text(
-                                text = employee.name
-                                    .ifBlank {
-                                        "Employee"
-                                    }
-                                    .take(1)
-                                    .uppercase(),
-
-                                color = Teal,
-
-                                style =
-                                    MaterialTheme.typography.titleLarge
-                            )
-                        }
-                    }
-
-                    Spacer(
-                        modifier = Modifier.width(12.dp)
+                    EmployeeAvatar(
+                        name = employee.name,
+                        imageUrl = employee.imageUrl
                     )
 
-                    // =================================================
-                    // EMPLOYEE NAME
-                    // =================================================
+                    Spacer(modifier = Modifier.width(12.dp))
 
                     Column {
 
                         Text(
                             text = getGreeting(),
-
                             color = TextSecondary,
-
-                            style =
-                                MaterialTheme.typography.bodySmall
+                            style = MaterialTheme.typography.bodySmall
                         )
 
-                        Spacer(
-                            modifier = Modifier.height(2.dp)
-                        )
+                        Spacer(modifier = Modifier.height(2.dp))
 
                         Text(
-                            text = employee.name
-                                .ifBlank {
-                                    "Employee"
-                                },
-
+                            text = employee.name.ifBlank { "Employee" },
                             color = TextPrimary,
-
-                            style =
-                                MaterialTheme.typography.titleMedium
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold
                         )
                     }
                 }
 
-                // =====================================================
-                // NOTIFICATION
-                // =====================================================
-
                 IconButton(
                     onClick = {}
                 ) {
-
                     Icon(
-                        imageVector =
-                            Icons.Default.NotificationsNone,
-
-                        contentDescription =
-                            "Notifications",
-
+                        imageVector = Icons.Default.NotificationsNone,
+                        contentDescription = "Notifications",
                         tint = Navy
                     )
                 }
             }
 
-            Spacer(
-                modifier = Modifier.height(8.dp)
-            )
+            Spacer(modifier = Modifier.height(18.dp))
 
             // =========================================================
-            // DATE
+            // DATE + TIME
+            // =========================================================
+
+            DashboardDateCard()
+
+            Spacer(modifier = Modifier.height(22.dp))
+
+            // =========================================================
+            // WELCOME / DASHBOARD TITLE
             // =========================================================
 
             Text(
-                text = LocalDate.now().format(
-                    DateTimeFormatter.ofPattern(
-                        "EEEE, dd MMMM yyyy"
-                    )
-                ),
+                text = "Your Attendance",
+                color = TextPrimary,
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold
+            )
 
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = "Manage your attendance and view today's status.",
                 color = TextSecondary,
-
                 style = MaterialTheme.typography.bodyMedium
             )
 
-            Spacer(
-                modifier = Modifier.height(24.dp)
-            )
+            Spacer(modifier = Modifier.height(16.dp))
 
             // =========================================================
             // TODAY'S ATTENDANCE
             // =========================================================
 
-            Text(
-                text = "Today's Attendance",
-
-                color = TextPrimary,
-
-                style = MaterialTheme.typography.titleMedium
-            )
-
-            Spacer(
-                modifier = Modifier.height(10.dp)
-            )
-
             AttendanceStatusCard(
                 attendance = attendance,
 
                 onMarkAttendance = {
-
-                    // Check In / Check Out
-                    // is handled on Attendance screen.
+                    // Attendance screen handles Check In / Check Out
                     onNavigate(1)
                 }
             )
 
-            Spacer(
-                modifier = Modifier.height(22.dp)
-            )
+            Spacer(modifier = Modifier.height(22.dp))
 
             // =========================================================
             // WORK LOCATION
             // =========================================================
 
-            Text(
-                text = "Work Location",
-
-                color = TextPrimary,
-
-                style = MaterialTheme.typography.titleMedium
+            SectionHeader(
+                title = "Work Location",
+                subtitle = "Attendance location verification"
             )
 
-            Spacer(
-                modifier = Modifier.height(10.dp)
-            )
+            Spacer(modifier = Modifier.height(10.dp))
 
             LocationCard(
                 locationState = locationState,
@@ -363,11 +240,8 @@ fun HomeScreen(
 
                         permissionLauncher.launch(
                             arrayOf(
-                                Manifest.permission
-                                    .ACCESS_FINE_LOCATION,
-
-                                Manifest.permission
-                                    .ACCESS_COARSE_LOCATION
+                                Manifest.permission.ACCESS_FINE_LOCATION,
+                                Manifest.permission.ACCESS_COARSE_LOCATION
                             )
                         )
 
@@ -378,54 +252,50 @@ fun HomeScreen(
                 }
             )
 
-            Spacer(
-                modifier = Modifier.height(24.dp)
-            )
+            Spacer(modifier = Modifier.height(22.dp))
 
             // =========================================================
-            // MONTHLY SUMMARY
+            // MONTHLY OVERVIEW
             // =========================================================
 
-            Text(
-                text = "This Month",
-
-                color = TextPrimary,
-
-                style = MaterialTheme.typography.titleMedium
+            SectionHeader(
+                title = "Monthly Overview",
+                subtitle = "Your attendance at a glance"
             )
 
-            Spacer(
-                modifier = Modifier.height(10.dp)
+            Spacer(modifier = Modifier.height(10.dp))
+
+            AttendanceSummaryCard(
+                attendanceRecords = monthlyAttendance
             )
 
-            AttendanceSummaryCard(attendanceRecords = monthlyAttendance)
-
-            Spacer(
-                modifier = Modifier.height(24.dp)
-            )
+            Spacer(modifier = Modifier.height(22.dp))
 
             // =========================================================
-            // RECENT ATTENDANCE
+            // RECENT ACTIVITY
             // =========================================================
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-
-                horizontalArrangement =
-                    Arrangement.SpaceBetween,
-
-                verticalAlignment =
-                    Alignment.CenterVertically
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
 
-                Text(
-                    text = "Recent Attendance",
+                Column {
 
-                    color = TextPrimary,
+                    Text(
+                        text = "Recent Activity",
+                        color = TextPrimary,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
 
-                    style =
-                        MaterialTheme.typography.titleMedium
-                )
+                    Text(
+                        text = "Latest attendance activity",
+                        color = TextSecondary,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
 
                 TextButton(
                     onClick = {
@@ -435,15 +305,21 @@ fun HomeScreen(
 
                     Text(
                         text = "View All",
-
                         color = Teal
+                    )
+
+                    Spacer(modifier = Modifier.width(2.dp))
+
+                    Icon(
+                        imageVector = Icons.Default.ArrowForward,
+                        contentDescription = null,
+                        tint = Teal,
+                        modifier = Modifier.size(16.dp)
                     )
                 }
             }
 
-            Spacer(
-                modifier = Modifier.height(6.dp)
-            )
+            Spacer(modifier = Modifier.height(8.dp))
 
             if (recentAttendance.isEmpty()) {
 
@@ -451,22 +327,235 @@ fun HomeScreen(
 
             } else {
 
-                recentAttendance.forEach { record ->
+                /*
+                 * Home shows only a small preview.
+                 *
+                 * The complete attendance history remains
+                 * on the Attendance screen.
+                 */
+                recentAttendance
+                    .take(2)
+                    .forEach { record ->
 
-                    RecentAttendanceItem(
-                        record = record
-                    )
+                        RecentAttendanceItem(
+                            record = record
+                        )
 
-                    Spacer(
-                        modifier = Modifier.height(10.dp)
-                    )
-                }
+                        Spacer(
+                            modifier = Modifier.height(8.dp)
+                        )
+                    }
             }
 
-            Spacer(
-                modifier = Modifier.height(24.dp)
+            Spacer(modifier = Modifier.height(24.dp))
+        }
+    }
+}
+
+
+// =============================================================
+// EMPLOYEE AVATAR
+// =============================================================
+
+@Composable
+private fun EmployeeAvatar(
+    name: String,
+    imageUrl: String?
+) {
+
+    Box(
+        modifier = Modifier
+            .size(52.dp)
+            .clip(CircleShape)
+            .background(TealLight),
+        contentAlignment = Alignment.Center
+    ) {
+
+        if (!imageUrl.isNullOrBlank()) {
+
+            AsyncImage(
+                model = imageUrl,
+                contentDescription = "$name profile photo",
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(CircleShape),
+                contentScale = ContentScale.Crop,
+
+                onSuccess = {
+                    Log.d(
+                        "HOME_IMAGE",
+                        "IMAGE LOADED SUCCESSFULLY: $imageUrl"
+                    )
+                },
+
+                onError = {
+                    Log.e(
+                        "HOME_IMAGE",
+                        "IMAGE LOAD FAILED: $imageUrl | " +
+                                it.result.throwable
+                    )
+                }
+            )
+
+        } else {
+
+            Text(
+                text = name
+                    .ifBlank { "Employee" }
+                    .take(1)
+                    .uppercase(),
+
+                color = Teal,
+
+                style = MaterialTheme.typography.titleLarge,
+
+                fontWeight = FontWeight.Bold
             )
         }
+    }
+}
+
+
+// =============================================================
+// DASHBOARD DATE CARD
+// =============================================================
+
+@Composable
+private fun DashboardDateCard() {
+
+    val currentDate = LocalDate.now()
+
+    val dateText =
+        currentDate.format(
+            DateTimeFormatter.ofPattern(
+                "EEEE, dd MMMM yyyy"
+            )
+        )
+
+    val timeText =
+        LocalTime.now().format(
+            DateTimeFormatter.ofPattern(
+                "hh:mm a"
+            )
+        )
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+
+        shape = RoundedCornerShape(18.dp),
+
+        colors = CardDefaults.cardColors(
+            containerColor = CardWhite
+        ),
+
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 0.dp
+        )
+    ) {
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(
+                    horizontal = 18.dp,
+                    vertical = 16.dp
+                ),
+
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .background(
+                        color = TealLight,
+                        shape = CircleShape
+                    ),
+
+                contentAlignment = Alignment.Center
+            ) {
+
+                Icon(
+                    imageVector = Icons.Default.CalendarMonth,
+                    contentDescription = "Today's date",
+                    tint = Teal,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.width(14.dp))
+
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+
+                Text(
+                    text = dateText,
+                    color = TextPrimary,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold
+                )
+
+                Spacer(modifier = Modifier.height(3.dp))
+
+                Text(
+                    text = "Today",
+                    color = TextSecondary,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+
+            Column(
+                horizontalAlignment = Alignment.End
+            ) {
+
+                Icon(
+                    imageVector = Icons.Default.AccessTime,
+                    contentDescription = null,
+                    tint = Teal,
+                    modifier = Modifier.size(17.dp)
+                )
+
+                Spacer(modifier = Modifier.height(2.dp))
+
+                Text(
+                    text = timeText,
+                    color = TextPrimary,
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+        }
+    }
+}
+
+
+// =============================================================
+// SECTION HEADER
+// =============================================================
+
+@Composable
+private fun SectionHeader(
+    title: String,
+    subtitle: String
+) {
+
+    Column {
+
+        Text(
+            text = title,
+            color = TextPrimary,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold
+        )
+
+        Spacer(modifier = Modifier.height(2.dp))
+
+        Text(
+            text = subtitle,
+            color = TextSecondary,
+            style = MaterialTheme.typography.bodySmall
+        )
     }
 }
 
@@ -488,6 +577,7 @@ private fun LocationCard(
     var subtitle: String
 
     var showVerifyButton = false
+    var verified = false
 
     when (locationState) {
 
@@ -497,8 +587,7 @@ private fun LocationCard(
             iconBackground = TealLight
 
             title = "Location not verified"
-            subtitle =
-                "Verify your location before attendance"
+            subtitle = "Verify your location before attendance"
 
             showVerifyButton = true
         }
@@ -509,38 +598,27 @@ private fun LocationCard(
             iconBackground = TealLight
 
             title = "Checking location"
-            subtitle =
-                "Getting your current location..."
+            subtitle = "Getting your current location..."
         }
 
         LocationUiState.PermissionRequired -> {
 
-            iconColor =
-                MaterialTheme.colorScheme.error
-
-            iconBackground =
-                MaterialTheme.colorScheme.errorContainer
+            iconColor = MaterialTheme.colorScheme.error
+            iconBackground = MaterialTheme.colorScheme.errorContainer
 
             title = "Location permission required"
-
-            subtitle =
-                "Allow location access to continue"
+            subtitle = "Allow location access to continue"
 
             showVerifyButton = true
         }
 
         LocationUiState.LocationUnavailable -> {
 
-            iconColor =
-                MaterialTheme.colorScheme.error
-
-            iconBackground =
-                MaterialTheme.colorScheme.errorContainer
+            iconColor = MaterialTheme.colorScheme.error
+            iconBackground = MaterialTheme.colorScheme.errorContainer
 
             title = "Location unavailable"
-
-            subtitle =
-                "Turn on your phone location"
+            subtitle = "Turn on your phone location"
 
             showVerifyButton = true
         }
@@ -555,15 +633,14 @@ private fun LocationCard(
             subtitle =
                 "Office confirmed • " +
                         "${locationState.distanceMeters.toInt()} m away"
+
+            verified = true
         }
 
         is LocationUiState.OutsideOffice -> {
 
-            iconColor =
-                MaterialTheme.colorScheme.error
-
-            iconBackground =
-                MaterialTheme.colorScheme.errorContainer
+            iconColor = MaterialTheme.colorScheme.error
+            iconBackground = MaterialTheme.colorScheme.errorContainer
 
             title = "Outside office"
 
@@ -575,14 +652,10 @@ private fun LocationCard(
 
         is LocationUiState.Error -> {
 
-            iconColor =
-                MaterialTheme.colorScheme.error
-
-            iconBackground =
-                MaterialTheme.colorScheme.errorContainer
+            iconColor = MaterialTheme.colorScheme.error
+            iconBackground = MaterialTheme.colorScheme.errorContainer
 
             title = "Location check failed"
-
             subtitle = locationState.message
 
             showVerifyButton = true
@@ -596,6 +669,10 @@ private fun LocationCard(
 
         colors = CardDefaults.cardColors(
             containerColor = CardWhite
+        ),
+
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 0.dp
         )
     ) {
 
@@ -604,8 +681,7 @@ private fun LocationCard(
                 .fillMaxWidth()
                 .padding(18.dp),
 
-            verticalAlignment =
-                Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically
         ) {
 
             Box(
@@ -616,27 +692,26 @@ private fun LocationCard(
                         shape = CircleShape
                     ),
 
-                contentAlignment =
-                    Alignment.Center
+                contentAlignment = Alignment.Center
             ) {
 
                 Icon(
                     imageVector =
-                        Icons.Default.LocationOn,
+                        if (verified) {
+                            Icons.Default.Verified
+                        } else {
+                            Icons.Default.LocationOn
+                        },
 
-                    contentDescription =
-                        "Location",
+                    contentDescription = "Location",
 
                     tint = iconColor,
 
-                    modifier =
-                        Modifier.size(23.dp)
+                    modifier = Modifier.size(23.dp)
                 )
             }
 
-            Spacer(
-                modifier = Modifier.width(14.dp)
-            )
+            Spacer(modifier = Modifier.width(14.dp))
 
             Column(
                 modifier = Modifier.weight(1f)
@@ -644,24 +719,17 @@ private fun LocationCard(
 
                 Text(
                     text = title,
-
                     color = TextPrimary,
-
-                    style =
-                        MaterialTheme.typography.titleSmall
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold
                 )
 
-                Spacer(
-                    modifier = Modifier.height(3.dp)
-                )
+                Spacer(modifier = Modifier.height(3.dp))
 
                 Text(
                     text = subtitle,
-
                     color = TextSecondary,
-
-                    style =
-                        MaterialTheme.typography.bodySmall
+                    style = MaterialTheme.typography.bodySmall
                 )
             }
 
@@ -673,8 +741,8 @@ private fun LocationCard(
 
                     Text(
                         text = "Verify",
-
-                        color = Teal
+                        color = Teal,
+                        fontWeight = FontWeight.SemiBold
                     )
                 }
             }
@@ -697,41 +765,59 @@ private fun EmptyRecentAttendance() {
 
         colors = CardDefaults.cardColors(
             containerColor = CardWhite
+        ),
+
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 0.dp
         )
     ) {
 
-        Column(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(20.dp),
+                .padding(18.dp),
 
-            horizontalAlignment =
-                Alignment.CenterHorizontally
+            verticalAlignment = Alignment.CenterVertically
         ) {
 
-            Text(
-                text = "No recent attendance",
+            Box(
+                modifier = Modifier
+                    .size(42.dp)
+                    .background(
+                        color = TealLight,
+                        shape = CircleShape
+                    ),
 
-                color = TextPrimary,
+                contentAlignment = Alignment.Center
+            ) {
 
-                style =
-                    MaterialTheme.typography.titleSmall
-            )
+                Icon(
+                    imageVector = Icons.Default.AccessTime,
+                    contentDescription = null,
+                    tint = Teal,
+                    modifier = Modifier.size(21.dp)
+                )
+            }
 
-            Spacer(
-                modifier = Modifier.height(4.dp)
-            )
+            Spacer(modifier = Modifier.width(12.dp))
 
-            Text(
-                text =
-                    "Your attendance records will appear here",
+            Column {
 
-                color = TextSecondary,
+                Text(
+                    text = "No recent activity",
+                    color = TextPrimary,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold
+                )
 
-                style =
-                    MaterialTheme.typography.bodySmall
-            )
+                Spacer(modifier = Modifier.height(3.dp))
 
+                Text(
+                    text = "Your attendance activity will appear here.",
+                    color = TextSecondary,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
         }
     }
 }
@@ -745,14 +831,10 @@ private fun getGreeting(): String {
 
     return when (LocalTime.now().hour) {
 
-        in 5..11 ->
-            "Good Morning"
+        in 5..11 -> "Good Morning"
 
-        in 12..16 ->
-            "Good Afternoon"
-        else ->
-            "Good Evening"
+        in 12..16 -> "Good Afternoon"
+
+        else -> "Good Evening"
     }
 }
-
-
