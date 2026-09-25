@@ -1,3 +1,4 @@
+
 package com.bioverity.attendance.ui.screens.login
 
 import android.app.Application
@@ -52,54 +53,32 @@ class LoginViewModel(
         val email = currentState.email.trim()
         val password = currentState.password
 
-        // ============================================================
-        // 1. EMAIL REQUIRED
-        // ============================================================
-
         if (email.isBlank()) {
-
             _uiState.value = currentState.copy(
                 isLoading = false,
                 loginSuccess = false,
                 errorMessage = "Please enter your email."
             )
-
             return
         }
 
-        // ============================================================
-        // 2. EMAIL FORMAT VALIDATION
-        // ============================================================
-
         if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-
             _uiState.value = currentState.copy(
                 isLoading = false,
                 loginSuccess = false,
                 errorMessage = "Please enter a valid email address."
             )
-
             return
         }
 
-        // ============================================================
-        // 3. PASSWORD REQUIRED
-        // ============================================================
-
         if (password.isBlank()) {
-
             _uiState.value = currentState.copy(
                 isLoading = false,
                 loginSuccess = false,
                 errorMessage = "Please enter your password."
             )
-
             return
         }
-
-        // ============================================================
-        // 4. START LOGIN
-        // ============================================================
 
         viewModelScope.launch {
 
@@ -117,10 +96,10 @@ class LoginViewModel(
                         password = password
                     )
                 )
-
-                // ====================================================
-                // 5. LOGIN SUCCESS
-                // ====================================================
+                android.util.Log.d(
+                    "LOGIN_RESPONSE",
+                    "name=${response.name}, imageUrl=${response.imageUrl}"
+                )
 
                 if (
                     response.success &&
@@ -134,7 +113,8 @@ class LoginViewModel(
                         personId = response.personId,
                         employeeId = response.employeeId.orEmpty(),
                         name = response.name.orEmpty(),
-                        email = response.email ?: email
+                        email = response.email ?: email,
+                        imageUrl = response.imageUrl
                     )
 
                     _uiState.value = _uiState.value.copy(
@@ -145,10 +125,6 @@ class LoginViewModel(
 
                     return@launch
                 }
-
-                // ====================================================
-                // 6. LOGIN FAILED
-                // ====================================================
 
                 val message = when (response.reason) {
 
@@ -193,16 +169,15 @@ class LoginViewModel(
     }
 
     fun clearLoginSuccess() {
-
         _uiState.value = _uiState.value.copy(
             loginSuccess = false
         )
     }
 
     fun clearError() {
-
         _uiState.value = _uiState.value.copy(
             errorMessage = null
         )
     }
 }
+

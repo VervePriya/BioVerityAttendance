@@ -12,6 +12,7 @@ object AppSession {
     private const val KEY_EMPLOYEE_ID = "employee_id"
     private const val KEY_NAME = "name"
     private const val KEY_EMAIL = "email"
+    private const val KEY_IMAGE_URL = "image_url"
 
     private fun preferences(context: Context) =
         context.getSharedPreferences(
@@ -24,7 +25,8 @@ object AppSession {
         personId: String,
         employeeId: String,
         name: String,
-        email: String
+        email: String,
+        imageUrl: String? = null
     ) {
 
         preferences(context)
@@ -34,6 +36,7 @@ object AppSession {
             .putString(KEY_EMPLOYEE_ID, employeeId)
             .putString(KEY_NAME, name)
             .putString(KEY_EMAIL, email)
+            .putString(KEY_IMAGE_URL, imageUrl)
             .apply()
     }
 
@@ -60,6 +63,11 @@ object AppSession {
     fun getEmail(context: Context): String? {
         return preferences(context)
             .getString(KEY_EMAIL, null)
+    }
+
+    fun getImageUrl(context: Context): String? {
+        return preferences(context)
+            .getString(KEY_IMAGE_URL, null)
     }
 
     fun logout(context: Context) {

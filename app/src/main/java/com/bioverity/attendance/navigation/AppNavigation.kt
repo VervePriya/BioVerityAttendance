@@ -1,6 +1,8 @@
+
 package com.bioverity.attendance.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -17,19 +19,9 @@ import com.bioverity.attendance.ui.screens.HomeScreen
 import com.bioverity.attendance.ui.screens.ProfileScreen
 import com.bioverity.attendance.viewmodel.AttendanceViewModel
 
+
 @Composable
 fun AppNavigation() {
-
-    // ----------------------------------------------------
-    // ATTENDANCE VIEW MODEL
-    // ----------------------------------------------------
-
-    // IMPORTANT:
-    // This single instance is shared by:
-    // Home
-    // Attendance
-    // Face Recognition
-    val attendanceViewModel: AttendanceViewModel = viewModel()
 
     // ----------------------------------------------------
     // CONTEXT
@@ -37,31 +29,66 @@ fun AppNavigation() {
 
     val context = LocalContext.current
 
+
+    // ----------------------------------------------------
+    // ATTENDANCE VIEW MODEL
+    // ----------------------------------------------------
+
+    // One shared instance for:
+    // Home
+    // Attendance
+    // Face Recognition
+
+    val attendanceViewModel: AttendanceViewModel =
+        viewModel()
+
+
     // ----------------------------------------------------
     // LOGIN SESSION
     // ----------------------------------------------------
 
     var isLoggedIn by remember {
+
         mutableStateOf(
             AppSession.isLoggedIn(context)
         )
     }
+
+
+    // ----------------------------------------------------
+    // LOAD EXISTING SESSION EMPLOYEE
+    // ----------------------------------------------------
+
+    LaunchedEffect(isLoggedIn) {
+
+        if (isLoggedIn) {
+
+            attendanceViewModel.loadEmployee(
+                context
+            )
+        }
+    }
+
 
     // ----------------------------------------------------
     // TAB
     // ----------------------------------------------------
 
     var selectedTab by remember {
+
         mutableIntStateOf(0)
     }
+
 
     // ----------------------------------------------------
     // FACE RECOGNITION
     // ----------------------------------------------------
 
     var showFaceRecognition by remember {
+
         mutableStateOf(false)
     }
+
 
     // ----------------------------------------------------
     // LOGIN SCREEN
@@ -70,19 +97,33 @@ fun AppNavigation() {
     if (!isLoggedIn) {
 
         LoginScreen(
+
             onLoginSuccess = {
 
-                // LoginViewModel has already saved the
-                // authenticated employee into AppSession.
+                // LoginViewModel has already saved:
+                //
+                // name
+                // email
+                // employee ID
+                // image_url
+                //
+                // into AppSession.
+
+                attendanceViewModel.loadEmployee(
+                    context
+                )
 
                 isLoggedIn = true
+
                 selectedTab = 0
+
                 showFaceRecognition = false
             }
         )
 
         return
     }
+
 
     // ----------------------------------------------------
     // FACE RECOGNITION SCREEN
@@ -93,6 +134,7 @@ fun AppNavigation() {
         FaceRecognitionScreen(
 
             onBack = {
+
                 showFaceRecognition = false
             },
 
@@ -100,20 +142,20 @@ fun AppNavigation() {
                 // Existing face-recognition behaviour
             },
 
-            // IMPORTANT:
-            // Pass the SAME AttendanceViewModel used
-            // by the Attendance screen.
-            attendanceViewModel = attendanceViewModel
+            attendanceViewModel =
+                attendanceViewModel
         )
 
         return
     }
+
 
     // ----------------------------------------------------
     // MAIN APPLICATION
     // ----------------------------------------------------
 
     when (selectedTab) {
+
 
         // =================================================
         // HOME
@@ -122,13 +164,17 @@ fun AppNavigation() {
         0 -> {
 
             HomeScreen(
-                viewModel = attendanceViewModel,
+
+                viewModel =
+                    attendanceViewModel,
 
                 onNavigate = {
+
                     selectedTab = it
                 }
             )
         }
+
 
         // =================================================
         // ATTENDANCE
@@ -138,17 +184,21 @@ fun AppNavigation() {
 
             AttendanceScreen(
 
-                viewModel = attendanceViewModel,
+                viewModel =
+                    attendanceViewModel,
 
                 onNavigate = {
+
                     selectedTab = it
                 },
 
                 onFaceRecognition = {
+
                     showFaceRecognition = true
                 }
             )
         }
+
 
         // =================================================
         // PROFILE
@@ -158,12 +208,17 @@ fun AppNavigation() {
 
             ProfileScreen(
 
-                personId = AppSession.getPersonId(context),
+                personId =
+                    AppSession.getPersonId(
+                        context
+                    ),
 
                 onNavigate = {
+
                     selectedTab = it
                 }
             )
         }
     }
 }
+

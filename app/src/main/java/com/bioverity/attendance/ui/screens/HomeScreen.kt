@@ -1,3 +1,4 @@
+
 package com.bioverity.attendance.ui.screens
 
 import android.Manifest
@@ -26,6 +27,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.NotificationsNone
+
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -43,7 +45,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
+
+import coil.compose.AsyncImage
 
 import com.bioverity.attendance.ui.components.AttendanceStatusCard
 import com.bioverity.attendance.ui.components.AttendanceSummaryCard
@@ -77,10 +82,27 @@ fun HomeScreen(
 ) {
 
     val employee by viewModel.employee.collectAsState()
+
     val attendance by viewModel.todayAttendance.collectAsState()
+
     val recentAttendance by viewModel.recentAttendance.collectAsState()
+    val monthlyAttendance by
+    viewModel.monthlyAttendance.collectAsState()
 
     val locationState by locationViewModel.locationState.collectAsState()
+
+    // =========================================================
+    // DEBUG - LOGGED IN EMPLOYEE
+    // =========================================================
+
+    android.util.Log.d(
+        "HOME_EMPLOYEE",
+        "name=${employee.name}, imageUrl=${employee.imageUrl}"
+    )
+
+    // =========================================================
+    // LOCATION PERMISSION
+    // =========================================================
 
     val permissionLauncher =
         rememberLauncherForActivityResult(
@@ -88,8 +110,12 @@ fun HomeScreen(
         ) { permissions ->
 
             val granted =
-                permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
-                        permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+                permissions[
+                    Manifest.permission.ACCESS_FINE_LOCATION
+                ] == true ||
+                        permissions[
+                            Manifest.permission.ACCESS_COARSE_LOCATION
+                        ] == true
 
             if (granted) {
                 locationViewModel.checkLocation()
@@ -131,8 +157,13 @@ fun HomeScreen(
             ) {
 
                 Row(
+
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+
+                    // =================================================
+                    // EMPLOYEE PHOTO
+                    // =================================================
 
                     Box(
                         modifier = Modifier
@@ -142,21 +173,63 @@ fun HomeScreen(
                         contentAlignment = Alignment.Center
                     ) {
 
-                        Text(
-                            text = employee.name
-                                .ifBlank { "Employee" }
-                                .take(1)
-                                .uppercase(),
+                        if (!employee.imageUrl.isNullOrBlank()) {
 
-                            color = Teal,
+                            AsyncImage(
+                                model = employee.imageUrl,
+                                contentDescription =
+                                    "${employee.name} profile photo",
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .clip(CircleShape),
+                                contentScale = ContentScale.Crop,
 
-                            style = MaterialTheme.typography.titleLarge
-                        )
+                                onSuccess = {
+
+                                    android.util.Log.d(
+                                        "HOME_IMAGE",
+                                        "IMAGE LOADED SUCCESSFULLY: " +
+                                                employee.imageUrl
+                                    )
+                                },
+
+                                onError = {
+
+                                    android.util.Log.e(
+                                        "HOME_IMAGE",
+                                        "IMAGE LOAD FAILED: " +
+                                                employee.imageUrl +
+                                                " | " +
+                                                it.result.throwable
+                                    )
+                                }
+                            )
+
+                        } else {
+
+                            Text(
+                                text = employee.name
+                                    .ifBlank {
+                                        "Employee"
+                                    }
+                                    .take(1)
+                                    .uppercase(),
+
+                                color = Teal,
+
+                                style =
+                                    MaterialTheme.typography.titleLarge
+                            )
+                        }
                     }
 
                     Spacer(
                         modifier = Modifier.width(12.dp)
                     )
+
+                    // =================================================
+                    // EMPLOYEE NAME
+                    // =================================================
 
                     Column {
 
@@ -165,7 +238,8 @@ fun HomeScreen(
 
                             color = TextSecondary,
 
-                            style = MaterialTheme.typography.bodySmall
+                            style =
+                                MaterialTheme.typography.bodySmall
                         )
 
                         Spacer(
@@ -174,23 +248,32 @@ fun HomeScreen(
 
                         Text(
                             text = employee.name
-                                .ifBlank { "Employee" },
+                                .ifBlank {
+                                    "Employee"
+                                },
 
                             color = TextPrimary,
 
-                            style = MaterialTheme.typography.titleMedium
+                            style =
+                                MaterialTheme.typography.titleMedium
                         )
                     }
                 }
+
+                // =====================================================
+                // NOTIFICATION
+                // =====================================================
 
                 IconButton(
                     onClick = {}
                 ) {
 
                     Icon(
-                        imageVector = Icons.Default.NotificationsNone,
+                        imageVector =
+                            Icons.Default.NotificationsNone,
 
-                        contentDescription = "Notifications",
+                        contentDescription =
+                            "Notifications",
 
                         tint = Navy
                     )
@@ -241,8 +324,9 @@ fun HomeScreen(
                 attendance = attendance,
 
                 onMarkAttendance = {
-                    // Check In / Check Out is handled
-                    // on the Attendance screen.
+
+                    // Check In / Check Out
+                    // is handled on Attendance screen.
                     onNavigate(1)
                 }
             )
@@ -279,8 +363,11 @@ fun HomeScreen(
 
                         permissionLauncher.launch(
                             arrayOf(
-                                Manifest.permission.ACCESS_FINE_LOCATION,
-                                Manifest.permission.ACCESS_COARSE_LOCATION
+                                Manifest.permission
+                                    .ACCESS_FINE_LOCATION,
+
+                                Manifest.permission
+                                    .ACCESS_COARSE_LOCATION
                             )
                         )
 
@@ -311,7 +398,7 @@ fun HomeScreen(
                 modifier = Modifier.height(10.dp)
             )
 
-            AttendanceSummaryCard()
+            AttendanceSummaryCard(attendanceRecords = monthlyAttendance)
 
             Spacer(
                 modifier = Modifier.height(24.dp)
@@ -336,7 +423,8 @@ fun HomeScreen(
 
                     color = TextPrimary,
 
-                    style = MaterialTheme.typography.titleMedium
+                    style =
+                        MaterialTheme.typography.titleMedium
                 )
 
                 TextButton(
@@ -409,7 +497,8 @@ private fun LocationCard(
             iconBackground = TealLight
 
             title = "Location not verified"
-            subtitle = "Verify your location before attendance"
+            subtitle =
+                "Verify your location before attendance"
 
             showVerifyButton = true
         }
@@ -420,7 +509,8 @@ private fun LocationCard(
             iconBackground = TealLight
 
             title = "Checking location"
-            subtitle = "Getting your current location..."
+            subtitle =
+                "Getting your current location..."
         }
 
         LocationUiState.PermissionRequired -> {
@@ -432,7 +522,9 @@ private fun LocationCard(
                 MaterialTheme.colorScheme.errorContainer
 
             title = "Location permission required"
-            subtitle = "Allow location access to continue"
+
+            subtitle =
+                "Allow location access to continue"
 
             showVerifyButton = true
         }
@@ -446,7 +538,9 @@ private fun LocationCard(
                 MaterialTheme.colorScheme.errorContainer
 
             title = "Location unavailable"
-            subtitle = "Turn on your phone location"
+
+            subtitle =
+                "Turn on your phone location"
 
             showVerifyButton = true
         }
@@ -637,6 +731,7 @@ private fun EmptyRecentAttendance() {
                 style =
                     MaterialTheme.typography.bodySmall
             )
+
         }
     }
 }
@@ -655,8 +750,9 @@ private fun getGreeting(): String {
 
         in 12..16 ->
             "Good Afternoon"
-
         else ->
             "Good Evening"
     }
 }
+
+
