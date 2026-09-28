@@ -72,6 +72,7 @@ import java.time.format.DateTimeFormatter
 fun HomeScreen(
     viewModel: AttendanceViewModel,
     onNavigate: (Int) -> Unit,
+    onNotificationsClick: () -> Unit,
     locationViewModel: LocationViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
 ) {
     val employee by viewModel.employee.collectAsState()
@@ -161,7 +162,7 @@ fun HomeScreen(
                 }
 
                 IconButton(
-                    onClick = {}
+                    onClick = onNotificationsClick
                 ) {
                     Icon(
                         imageVector = Icons.Default.NotificationsNone,

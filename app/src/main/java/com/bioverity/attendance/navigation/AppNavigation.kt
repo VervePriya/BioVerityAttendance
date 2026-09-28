@@ -1,4 +1,3 @@
-
 package com.bioverity.attendance.navigation
 
 import androidx.compose.runtime.Composable
@@ -16,8 +15,10 @@ import com.bioverity.attendance.ui.LoginScreen
 import com.bioverity.attendance.ui.screens.AttendanceScreen
 import com.bioverity.attendance.ui.screens.FaceRecognitionScreen
 import com.bioverity.attendance.ui.screens.HomeScreen
+import com.bioverity.attendance.ui.screens.NotificationsScreen
 import com.bioverity.attendance.ui.screens.ProfileScreen
 import com.bioverity.attendance.viewmodel.AttendanceViewModel
+import com.bioverity.attendance.viewmodel.NotificationViewModel
 
 
 @Composable
@@ -34,12 +35,25 @@ fun AppNavigation() {
     // ATTENDANCE VIEW MODEL
     // ----------------------------------------------------
 
-    // One shared instance for:
+    // Shared instance for:
     // Home
     // Attendance
     // Face Recognition
 
     val attendanceViewModel: AttendanceViewModel =
+        viewModel()
+
+
+    // ----------------------------------------------------
+    // NOTIFICATION VIEW MODEL
+    // ----------------------------------------------------
+
+    // Shared instance for:
+    // Home notification count
+    // Notification screen
+    // Read / delete actions
+
+    val notificationViewModel: NotificationViewModel =
         viewModel()
 
 
@@ -71,12 +85,22 @@ fun AppNavigation() {
 
 
     // ----------------------------------------------------
-    // TAB
+    // MAIN TAB
     // ----------------------------------------------------
 
     var selectedTab by remember {
 
         mutableIntStateOf(0)
+    }
+
+
+    // ----------------------------------------------------
+    // NOTIFICATIONS
+    // ----------------------------------------------------
+
+    var showNotifications by remember {
+
+        mutableStateOf(false)
     }
 
 
@@ -106,6 +130,7 @@ fun AppNavigation() {
                 // email
                 // employee ID
                 // image_url
+                // person ID
                 //
                 // into AppSession.
 
@@ -118,6 +143,38 @@ fun AppNavigation() {
                 selectedTab = 0
 
                 showFaceRecognition = false
+
+                showNotifications = false
+            }
+        )
+
+        return
+    }
+
+
+    // ----------------------------------------------------
+    // NOTIFICATIONS SCREEN
+    // ----------------------------------------------------
+
+    if (showNotifications) {
+
+        val personId =
+            AppSession.getPersonId(context)
+
+        if (personId == null) {
+            showNotifications = false
+            return
+        }
+
+        NotificationsScreen(
+
+            personId = personId,
+
+            viewModel = notificationViewModel,
+
+            onBack = {
+
+                showNotifications = false
             }
         )
 
@@ -168,9 +225,14 @@ fun AppNavigation() {
                 viewModel =
                     attendanceViewModel,
 
-                onNavigate = {
+                onNavigate = { index ->
 
-                    selectedTab = it
+                    selectedTab = index
+                },
+
+                onNotificationsClick = {
+
+                    showNotifications = true
                 }
             )
         }
@@ -221,4 +283,3 @@ fun AppNavigation() {
         }
     }
 }
-
