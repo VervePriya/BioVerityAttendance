@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -68,7 +69,7 @@ fun AttendanceStatusCard(
                 ) {
 
                     Icon(
-                        imageVector = Icons.Default.Fingerprint,
+                        imageVector = Icons.Default.Face,
                         contentDescription = null,
                         tint = Color.White,
                         modifier = Modifier.size(30.dp)
@@ -122,7 +123,7 @@ fun AttendanceStatusCard(
             ) {
 
                 Icon(
-                    Icons.Default.Fingerprint,
+                    Icons.Default.Face,
                     contentDescription = null
                 )
 

@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 import java.time.Duration
+import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
@@ -30,6 +31,9 @@ class AttendanceViewModel : ViewModel() {
 
     companion object {
         private const val TAG = "AttendanceViewModel"
+
+        private const val SRI_LANKA_TIME_ZONE =
+            "Asia/Colombo"
     }
 
     // =============================================================
@@ -37,8 +41,7 @@ class AttendanceViewModel : ViewModel() {
     // =============================================================
 
     private val sriLankaZone =
-        ZoneId.of("Asia/Colombo")
-
+        ZoneId.of(SRI_LANKA_TIME_ZONE)
 
     // =============================================================
     // DISPLAY FORMATTERS
@@ -56,20 +59,12 @@ class AttendanceViewModel : ViewModel() {
             Locale.ENGLISH
         )
 
-
     // =============================================================
-    // DATABASE FORMATTERS
+    // LEGACY DATABASE FORMATTERS
+    //
+    // These are only for old records that do NOT contain timezone
+    // information.
     // =============================================================
-
-    /*
-     * Current Supabase column:
-     *
-     * timestamp without time zone
-     *
-     * Example:
-     *
-     * 2026-09-24 09:15:00
-     */
 
     private val databaseSpaceFormatter =
         DateTimeFormatter.ofPattern(
@@ -83,33 +78,12 @@ class AttendanceViewModel : ViewModel() {
             Locale.ENGLISH
         )
 
-
-    /*
-     * API currently returns:
-     *
-     * 2026-09-24T09:15:00
-     */
-
-    private val databaseIsoFormatter =
-        DateTimeFormatter.ofPattern(
-            "yyyy-MM-dd'T'HH:mm:ss",
-            Locale.ENGLISH
-        )
-
-    private val databaseIsoMillisFormatter =
-        DateTimeFormatter.ofPattern(
-            "yyyy-MM-dd'T'HH:mm:ss.SSS",
-            Locale.ENGLISH
-        )
-
-
     // =============================================================
     // ATTENDANCE RULE
     // =============================================================
 
     private val lateTime =
         LocalTime.of(9, 0)
-
 
     // =============================================================
     // EMPLOYEE
@@ -132,7 +106,6 @@ class AttendanceViewModel : ViewModel() {
     val employee: StateFlow<Employee> =
         _employee
 
-
     // =============================================================
     // TODAY
     // =============================================================
@@ -144,7 +117,6 @@ class AttendanceViewModel : ViewModel() {
 
     val todayAttendance: StateFlow<AttendanceRecord> =
         _todayAttendance
-
 
     // =============================================================
     // RECENT ATTENDANCE
@@ -158,7 +130,6 @@ class AttendanceViewModel : ViewModel() {
     val recentAttendance: StateFlow<List<AttendanceRecord>> =
         _recentAttendance
 
-
     // =============================================================
     // MONTHLY ATTENDANCE
     // =============================================================
@@ -171,7 +142,6 @@ class AttendanceViewModel : ViewModel() {
     val monthlyAttendance: StateFlow<List<AttendanceRecord>> =
         _monthlyAttendance
 
-
     // =============================================================
     // LOADING
     // =============================================================
@@ -182,7 +152,6 @@ class AttendanceViewModel : ViewModel() {
     val isLoading: StateFlow<Boolean> =
         _isLoading
 
-
     // =============================================================
     // ERROR
     // =============================================================
@@ -192,7 +161,6 @@ class AttendanceViewModel : ViewModel() {
 
     val errorMessage: StateFlow<String?> =
         _errorMessage
-
 
     // =============================================================
     // LOAD EMPLOYEE
@@ -224,12 +192,10 @@ class AttendanceViewModel : ViewModel() {
             AppSession
                 .getImageUrl(context)
 
-
         Log.d(
             TAG,
             "Loading employee: personId=$personId, name=$name"
         )
-
 
         _employee.value =
             Employee(
@@ -243,7 +209,6 @@ class AttendanceViewModel : ViewModel() {
                 imageUrl = imageUrl
             )
 
-
         if (personId.isBlank()) {
 
             _errorMessage.value =
@@ -252,10 +217,8 @@ class AttendanceViewModel : ViewModel() {
             return
         }
 
-
         loadAttendance(personId)
     }
-
 
     // =============================================================
     // LOAD ATTENDANCE
@@ -273,12 +236,10 @@ class AttendanceViewModel : ViewModel() {
             return
         }
 
-
         viewModelScope.launch {
 
             _isLoading.value = true
             _errorMessage.value = null
-
 
             try {
 
@@ -287,12 +248,10 @@ class AttendanceViewModel : ViewModel() {
                     "Fetching attendance for personId=$personId"
                 )
 
-
                 val response =
                     ApiClient.api.getAttendance(
                         personId
                     )
-
 
                 Log.d(
                     TAG,
@@ -304,7 +263,6 @@ class AttendanceViewModel : ViewModel() {
                     "API records count=${response.records.size}"
                 )
 
-
                 if (!response.success) {
 
                     _errorMessage.value =
@@ -315,9 +273,8 @@ class AttendanceViewModel : ViewModel() {
                     return@launch
                 }
 
-
                 // =================================================
-                // DEBUG EACH DATABASE RECORD
+                // DEBUG DATABASE RECORDS
                 // =================================================
 
                 response.records.forEach { record ->
@@ -331,9 +288,8 @@ class AttendanceViewModel : ViewModel() {
                     )
                 }
 
-
                 // =================================================
-                // BUILD MONTH
+                // BUILD MONTHLY ATTENDANCE
                 // =================================================
 
                 val monthly =
@@ -341,12 +297,10 @@ class AttendanceViewModel : ViewModel() {
                         response.records
                     )
 
-
                 Log.d(
                     TAG,
                     "MONTHLY RESULT COUNT=${monthly.size}"
                 )
-
 
                 monthly.forEach { record ->
 
@@ -361,10 +315,8 @@ class AttendanceViewModel : ViewModel() {
                     )
                 }
 
-
                 _monthlyAttendance.value =
                     monthly
-
 
                 // =================================================
                 // TODAY
@@ -373,25 +325,20 @@ class AttendanceViewModel : ViewModel() {
                 val todayText =
                     todayDateText()
 
-
                 val todayRecord =
                     monthly.firstOrNull {
-
                         it.date == todayText
                     }
-
 
                 _todayAttendance.value =
                     todayRecord
                         ?: createNotMarkedRecord()
-
 
                 Log.d(
                     TAG,
                     "TODAY=$todayText, " +
                             "todayRecord=$todayRecord"
                 )
-
 
                 // =================================================
                 // RECENT
@@ -400,19 +347,15 @@ class AttendanceViewModel : ViewModel() {
                 _recentAttendance.value =
                     monthly
                         .sortedByDescending {
-                            parseDisplayDate(
-                                it.date
-                            )
+                            parseDisplayDate(it.date)
                         }
                         .take(7)
-
 
                 Log.d(
                     TAG,
                     "RECENT RESULT COUNT=" +
                             _recentAttendance.value.size
                 )
-
 
             } catch (e: Exception) {
 
@@ -424,8 +367,7 @@ class AttendanceViewModel : ViewModel() {
 
                 _errorMessage.value =
                     "Unable to load attendance: ${
-                        e.message
-                            ?: "Unknown error"
+                        e.message ?: "Unknown error"
                     }"
 
             } finally {
@@ -434,7 +376,6 @@ class AttendanceViewModel : ViewModel() {
             }
         }
     }
-
 
     // =============================================================
     // REFRESH
@@ -449,7 +390,6 @@ class AttendanceViewModel : ViewModel() {
                 .getPersonId(context)
                 .orEmpty()
 
-
         if (personId.isBlank()) {
 
             _errorMessage.value =
@@ -458,17 +398,15 @@ class AttendanceViewModel : ViewModel() {
             return
         }
 
-
         loadAttendance(personId)
     }
-
 
     // =============================================================
     // MARK ATTENDANCE
     //
-    // Kept for compatibility.
+    // Compatibility only.
     //
-    // Actual attendance should be saved by:
+    // Real attendance is saved by:
     //
     // POST /attendance
     // =============================================================
@@ -497,7 +435,6 @@ class AttendanceViewModel : ViewModel() {
         val currentAttendance =
             _todayAttendance.value
 
-
         // =========================================================
         // CHECK IN
         // =========================================================
@@ -505,14 +442,11 @@ class AttendanceViewModel : ViewModel() {
         if (currentAttendance.checkIn == null) {
 
             val status =
-                if (
-                    currentTime.isAfter(lateTime)
-                ) {
+                if (currentTime.isAfter(lateTime)) {
                     "Late"
                 } else {
                     "Present"
                 }
-
 
             _todayAttendance.value =
                 AttendanceRecord(
@@ -526,7 +460,6 @@ class AttendanceViewModel : ViewModel() {
             return
         }
 
-
         // =========================================================
         // CHECK OUT
         // =========================================================
@@ -537,7 +470,6 @@ class AttendanceViewModel : ViewModel() {
                 parseTime(
                     currentAttendance.checkIn
                 )
-
 
             if (checkInTime != null) {
 
@@ -552,7 +484,6 @@ class AttendanceViewModel : ViewModel() {
                         checkInDateTime,
                         now
                     )
-
 
                 _todayAttendance.value =
                     currentAttendance.copy(
@@ -573,7 +504,6 @@ class AttendanceViewModel : ViewModel() {
         }
     }
 
-
     // =============================================================
     // BUILD MONTHLY ATTENDANCE
     // =============================================================
@@ -590,7 +520,6 @@ class AttendanceViewModel : ViewModel() {
         val firstDayOfMonth =
             today.withDayOfMonth(1)
 
-
         Log.d(
             TAG,
             "Building monthly attendance"
@@ -598,7 +527,7 @@ class AttendanceViewModel : ViewModel() {
 
         Log.d(
             TAG,
-            "Today=$today"
+            "Sri Lanka today=$today"
         )
 
         Log.d(
@@ -606,9 +535,8 @@ class AttendanceViewModel : ViewModel() {
             "First day=$firstDayOfMonth"
         )
 
-
         // =========================================================
-        // GROUP RECORDS BY DATE
+        // GROUP BY SRI LANKA DATE
         // =========================================================
 
         val grouped =
@@ -617,14 +545,12 @@ class AttendanceViewModel : ViewModel() {
                     MutableList<ParsedAttendance>
                     >()
 
-
         for (record in databaseRecords) {
 
             val timestamp =
                 parseDatabaseDateTime(
                     record.attendance_time
                 )
-
 
             if (timestamp == null) {
 
@@ -637,28 +563,25 @@ class AttendanceViewModel : ViewModel() {
                 continue
             }
 
-
+            // IMPORTANT:
+            // timestamp is ALWAYS converted to Sri Lanka time
+            // before taking the date.
             val localDate =
                 timestamp.toLocalDate()
 
-
             Log.d(
                 TAG,
-                "Parsed: ${record.attendance_type} " +
+                "Sri Lanka parsed: " +
+                        "${record.attendance_type} " +
                         "${record.attendance_time} -> " +
                         "$timestamp -> $localDate"
             )
-
 
             // =====================================================
             // CURRENT MONTH ONLY
             // =====================================================
 
-            if (
-                localDate.isBefore(
-                    firstDayOfMonth
-                )
-            ) {
+            if (localDate.isBefore(firstDayOfMonth)) {
 
                 Log.d(
                     TAG,
@@ -668,14 +591,11 @@ class AttendanceViewModel : ViewModel() {
                 continue
             }
 
-
             // =====================================================
             // NO FUTURE DATES
             // =====================================================
 
-            if (
-                localDate.isAfter(today)
-            ) {
+            if (localDate.isAfter(today)) {
 
                 Log.d(
                     TAG,
@@ -685,15 +605,11 @@ class AttendanceViewModel : ViewModel() {
                 continue
             }
 
-
             val type =
                 record.attendance_type
                     ?.trim()
-                    ?.uppercase(
-                        Locale.ENGLISH
-                    )
+                    ?.uppercase(Locale.ENGLISH)
                     .orEmpty()
-
 
             if (
                 type != "CHECK_IN" &&
@@ -708,7 +624,6 @@ class AttendanceViewModel : ViewModel() {
                 continue
             }
 
-
             grouped
                 .getOrPut(localDate) {
                     mutableListOf()
@@ -721,12 +636,10 @@ class AttendanceViewModel : ViewModel() {
                 )
         }
 
-
         Log.d(
             TAG,
             "Grouped attendance dates=${grouped.keys}"
         )
-
 
         // =========================================================
         // CREATE MONTHLY RESULT
@@ -735,22 +648,17 @@ class AttendanceViewModel : ViewModel() {
         val result =
             mutableListOf<AttendanceRecord>()
 
-
         var currentDate =
             firstDayOfMonth
 
-
-        while (
-            !currentDate.isAfter(today)
-        ) {
+        while (!currentDate.isAfter(today)) {
 
             // =====================================================
-            // WEEKENDS ARE IGNORED
+            // WEEKENDS IGNORED
             // =====================================================
 
             val isWorkingDay =
                 currentDate.dayOfWeek.value in 1..5
-
 
             if (!isWorkingDay) {
 
@@ -760,7 +668,6 @@ class AttendanceViewModel : ViewModel() {
                 continue
             }
 
-
             val dayRecords =
                 grouped[currentDate]
                     ?.sortedBy {
@@ -768,9 +675,8 @@ class AttendanceViewModel : ViewModel() {
                     }
                     ?: emptyList()
 
-
             // =====================================================
-            // CHECK IN
+            // FIRST CHECK-IN
             // =====================================================
 
             val checkInRecord =
@@ -782,9 +688,8 @@ class AttendanceViewModel : ViewModel() {
                         it.dateTime
                     }
 
-
             // =====================================================
-            // CHECK OUT
+            // LAST CHECK-OUT
             // =====================================================
 
             val checkOutRecord =
@@ -796,7 +701,6 @@ class AttendanceViewModel : ViewModel() {
                         it.dateTime
                     }
 
-
             // =====================================================
             // NO CHECK-IN
             // =====================================================
@@ -804,21 +708,16 @@ class AttendanceViewModel : ViewModel() {
             if (checkInRecord == null) {
 
                 val status =
-                    if (
-                        currentDate == today
-                    ) {
+                    if (currentDate == today) {
                         "Not Marked"
                     } else {
                         "Absent"
                     }
 
-
                 result.add(
                     AttendanceRecord(
                         date =
-                            formatDate(
-                                currentDate
-                            ),
+                            formatDate(currentDate),
 
                         checkIn = null,
 
@@ -830,13 +729,11 @@ class AttendanceViewModel : ViewModel() {
                     )
                 )
 
-
                 currentDate =
                     currentDate.plusDays(1)
 
                 continue
             }
-
 
             // =====================================================
             // CHECK-IN STATUS
@@ -847,21 +744,17 @@ class AttendanceViewModel : ViewModel() {
                     .dateTime
                     .toLocalTime()
 
-
             val status =
-                if (
-                    checkInTime.isAfter(
-                        lateTime
-                    )
-                ) {
+                if (checkInTime.isAfter(lateTime)) {
                     "Late"
                 } else {
                     "Present"
                 }
 
-
             // =====================================================
-            // DISPLAY TIMES
+            // DISPLAY CHECK-IN
+            //
+            // Already converted to Sri Lanka time.
             // =====================================================
 
             val displayCheckIn =
@@ -869,15 +762,17 @@ class AttendanceViewModel : ViewModel() {
                     timeFormatter
                 )
 
+            // =====================================================
+            // DISPLAY CHECK-OUT
+            //
+            // Already converted to Sri Lanka time.
+            // =====================================================
 
             val displayCheckOut =
                 checkOutRecord
                     ?.dateTime
                     ?.toLocalTime()
-                    ?.format(
-                        timeFormatter
-                    )
-
+                    ?.format(timeFormatter)
 
             // =====================================================
             // WORKING HOURS
@@ -892,13 +787,10 @@ class AttendanceViewModel : ViewModel() {
                         checkOutRecord?.dateTime
                 )
 
-
             result.add(
                 AttendanceRecord(
                     date =
-                        formatDate(
-                            currentDate
-                        ),
+                        formatDate(currentDate),
 
                     checkIn =
                         displayCheckIn,
@@ -914,23 +806,33 @@ class AttendanceViewModel : ViewModel() {
                 )
             )
 
-
             currentDate =
                 currentDate.plusDays(1)
         }
 
-
         return result
             .sortedByDescending {
-                parseDisplayDate(
-                    it.date
-                )
+                parseDisplayDate(it.date)
             }
     }
 
-
     // =============================================================
     // DATABASE TIMESTAMP PARSER
+    //
+    // IMPORTANT:
+    //
+    // Every timestamp containing timezone information is converted
+    // to Asia/Colombo.
+    //
+    // Examples:
+    //
+    // 2026-09-29 08:15:25.629596+00
+    //              ↓
+    // 2026-09-29 13:45:25.629596
+    //
+    // 2026-09-29T13:45:25.629596+05:30
+    //              ↓
+    // 2026-09-29 13:45:25.629596
     // =============================================================
 
     private fun parseDatabaseDateTime(
@@ -941,150 +843,167 @@ class AttendanceViewModel : ViewModel() {
             return null
         }
 
-
-        val cleanValue =
-            value.trim()
-
+        val cleanValue = value.trim()
 
         Log.d(
             TAG,
-            "Parsing database timestamp: $cleanValue"
+            "Parsing attendance time: $cleanValue"
         )
 
-
         // =========================================================
-        // 1. CURRENT DATABASE FORMAT
+        // CASE 1: BACKEND ALREADY RETURNED SRI LANKA LOCAL TIME
         //
-        // 2026-09-24 09:15:00
+        // Example:
+        //
+        // 2026-09-29 13:45:25
+        //
+        // The FastAPI endpoint converts database UTC time into
+        // Asia/Colombo before sending it to Android.
+        //
+        // Therefore this value MUST be treated as Sri Lanka time.
         // =========================================================
 
         try {
 
-            return LocalDateTime.parse(
-                cleanValue,
-                databaseSpaceFormatter
-            )
+            val localValue =
+                cleanValue.replaceFirst(
+                    " ",
+                    "T"
+                )
 
-        } catch (_: DateTimeParseException) {
+            // If there is NO timezone information,
+            // treat it directly as Sri Lanka local time.
+
+            if (
+                !localValue.endsWith("Z") &&
+                !localValue.contains("+") &&
+                !localValue.substringAfter("T")
+                    .drop(1)
+                    .contains("-")
+            ) {
+
+                val localDateTime =
+                    LocalDateTime.parse(
+                        localValue
+                    )
+
+                Log.d(
+                    TAG,
+                    "SRI LANKA LOCAL TIME: " +
+                            "$cleanValue -> " +
+                            localDateTime
+                )
+
+                return localDateTime
+            }
+
+        } catch (e: Exception) {
+
+            Log.w(
+                TAG,
+                "Local Sri Lanka parsing failed: $cleanValue"
+            )
         }
 
-
         // =========================================================
-        // 2. CURRENT DATABASE FORMAT WITH MILLISECONDS
+        // CASE 2: TIMESTAMP WITH OFFSET
         //
-        // 2026-09-24 09:15:00.123
+        // Example:
+        //
+        // 2026-09-29 08:15:25.629596+00
+        //
+        // Convert +00 into +00:00 first.
+        // Then convert the instant to Asia/Colombo.
         // =========================================================
 
         try {
 
-            return LocalDateTime.parse(
-                cleanValue,
-                databaseSpaceMillisFormatter
-            )
+            var normalized =
+                cleanValue.replaceFirst(
+                    " ",
+                    "T"
+                )
 
-        } catch (_: DateTimeParseException) {
-        }
+            if (normalized.endsWith("+00")) {
 
-
-        // =========================================================
-        // 3. API FORMAT
-        //
-        // 2026-09-24T09:15:00
-        // =========================================================
-
-        try {
-
-            return LocalDateTime.parse(
-                cleanValue,
-                databaseIsoFormatter
-            )
-
-        } catch (_: DateTimeParseException) {
-        }
-
-
-        // =========================================================
-        // 4. API FORMAT WITH MILLISECONDS
-        //
-        // 2026-09-24T09:15:00.123
-        // =========================================================
-
-        try {
-
-            return LocalDateTime.parse(
-                cleanValue,
-                databaseIsoMillisFormatter
-            )
-
-        } catch (_: DateTimeParseException) {
-        }
-
-
-        // =========================================================
-        // 5. OFFSET FORMAT
-        //
-        // 2026-09-24T09:15:00+05:30
-        // =========================================================
-
-        try {
+                normalized =
+                    normalized.dropLast(3) +
+                            "+00:00"
+            }
 
             val offsetDateTime =
                 OffsetDateTime.parse(
-                    cleanValue
+                    normalized
                 )
 
+            val sriLankaDateTime =
+                offsetDateTime
+                    .atZoneSameInstant(
+                        sriLankaZone
+                    )
+                    .toLocalDateTime()
 
-            return offsetDateTime
-                .atZoneSameInstant(
-                    sriLankaZone
-                )
-                .toLocalDateTime()
-
-        } catch (_: Exception) {
-        }
-
-
-        // =========================================================
-        // 6. UTC FORMAT
-        //
-        // 2026-09-24T03:45:00Z
-        // =========================================================
-
-        try {
-
-            return java.time.Instant
-                .parse(cleanValue)
-                .atZone(sriLankaZone)
-                .toLocalDateTime()
-
-        } catch (_: Exception) {
-        }
-
-
-        // =========================================================
-        // 7. FINAL DEFAULT ISO PARSER
-        // =========================================================
-
-        try {
-
-            return LocalDateTime.parse(
-                cleanValue
+            Log.d(
+                TAG,
+                "OFFSET -> SRI LANKA: " +
+                        "$cleanValue -> " +
+                        "$sriLankaDateTime"
             )
 
-        } catch (_: Exception) {
+            return sriLankaDateTime
+
+        } catch (e: Exception) {
+
+            Log.w(
+                TAG,
+                "Offset parsing failed: $cleanValue"
+            )
         }
 
+        // =========================================================
+        // CASE 3: UTC Z
+        //
+        // Example:
+        //
+        // 2026-09-29T08:15:25.629596Z
+        // =========================================================
+
+        try {
+
+            val sriLankaDateTime =
+                Instant
+                    .parse(cleanValue)
+                    .atZone(sriLankaZone)
+                    .toLocalDateTime()
+
+            Log.d(
+                TAG,
+                "UTC Z -> SRI LANKA: " +
+                        "$cleanValue -> " +
+                        "$sriLankaDateTime"
+            )
+
+            return sriLankaDateTime
+
+        } catch (e: Exception) {
+
+            Log.w(
+                TAG,
+                "UTC Z parsing failed: $cleanValue"
+            )
+        }
+
+        // =========================================================
+        // FAILED
+        // =========================================================
 
         Log.e(
             TAG,
-            "FAILED TO PARSE TIMESTAMP: $cleanValue"
+            "FAILED TO PARSE ATTENDANCE TIME: $cleanValue"
         )
-
 
         return null
     }
-
-
     // =============================================================
     // WORKING HOURS
     // =============================================================
@@ -1101,13 +1020,9 @@ class AttendanceViewModel : ViewModel() {
             return "00h 00m"
         }
 
-
-        if (
-            checkOut.isBefore(checkIn)
-        ) {
+        if (checkOut.isBefore(checkIn)) {
             return "00h 00m"
         }
-
 
         val duration =
             Duration.between(
@@ -1115,19 +1030,16 @@ class AttendanceViewModel : ViewModel() {
                 checkOut
             )
 
-
         val totalMinutes =
             duration
                 .toMinutes()
                 .coerceAtLeast(0)
-
 
         val hours =
             totalMinutes / 60
 
         val minutes =
             totalMinutes % 60
-
 
         return String.format(
             Locale.ENGLISH,
@@ -1136,7 +1048,6 @@ class AttendanceViewModel : ViewModel() {
             minutes
         )
     }
-
 
     // =============================================================
     // PARSE DISPLAY TIME
@@ -1150,15 +1061,10 @@ class AttendanceViewModel : ViewModel() {
             return null
         }
 
-
         return try {
 
             LocalTime.parse(
-                value
-                    .trim()
-                    .uppercase(
-                        Locale.ENGLISH
-                    ),
+                value.trim().uppercase(Locale.ENGLISH),
                 timeFormatter
             )
 
@@ -1167,7 +1073,6 @@ class AttendanceViewModel : ViewModel() {
             null
         }
     }
-
 
     // =============================================================
     // FORMAT DATE
@@ -1182,7 +1087,6 @@ class AttendanceViewModel : ViewModel() {
         )
     }
 
-
     // =============================================================
     // TODAY TEXT
     // =============================================================
@@ -1195,7 +1099,6 @@ class AttendanceViewModel : ViewModel() {
             )
         )
     }
-
 
     // =============================================================
     // DEFAULT NOT MARKED
@@ -1212,7 +1115,6 @@ class AttendanceViewModel : ViewModel() {
             workingHours = "00h 00m"
         )
     }
-
 
     // =============================================================
     // PARSE DISPLAY DATE
@@ -1235,7 +1137,6 @@ class AttendanceViewModel : ViewModel() {
         }
     }
 
-
     // =============================================================
     // CLEAR ERROR
     // =============================================================
@@ -1244,7 +1145,6 @@ class AttendanceViewModel : ViewModel() {
 
         _errorMessage.value = null
     }
-
 
     // =============================================================
     // INTERNAL DATA

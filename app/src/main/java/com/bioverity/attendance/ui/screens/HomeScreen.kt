@@ -1,7 +1,7 @@
+
 package com.bioverity.attendance.ui.screens
 
 import android.Manifest
-import android.util.Log
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -37,8 +37,12 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -63,9 +67,18 @@ import com.bioverity.attendance.ui.theme.TextSecondary
 import com.bioverity.attendance.viewmodel.AttendanceViewModel
 import com.bioverity.attendance.viewmodel.LocationUiState
 import com.bioverity.attendance.viewmodel.LocationViewModel
-import java.time.LocalDate
-import java.time.LocalTime
+import kotlinx.coroutines.delay
+import java.time.LocalDateTime
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+
+private val SriLankaZone: ZoneId = ZoneId.of("Asia/Colombo")
+
+private val DashboardDateFormatter =
+    DateTimeFormatter.ofPattern("EEEE, dd MMMM yyyy")
+
+private val DashboardTimeFormatter =
+    DateTimeFormatter.ofPattern("hh:mm:ss a")
 
 
 @Composable
@@ -73,7 +86,8 @@ fun HomeScreen(
     viewModel: AttendanceViewModel,
     onNavigate: (Int) -> Unit,
     onNotificationsClick: () -> Unit,
-    locationViewModel: LocationViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+    locationViewModel: LocationViewModel =
+        androidx.lifecycle.viewmodel.compose.viewModel()
 ) {
     val employee by viewModel.employee.collectAsState()
     val attendance by viewModel.todayAttendance.collectAsState()
@@ -81,19 +95,43 @@ fun HomeScreen(
     val monthlyAttendance by viewModel.monthlyAttendance.collectAsState()
     val locationState by locationViewModel.locationState.collectAsState()
 
-    Log.d(
-        "HOME_EMPLOYEE",
-        "name=${employee.name}, imageUrl=${employee.imageUrl}"
-    )
+    /*
+     * Keep the dashboard clock in Sri Lanka time regardless
+     * of the phone's configured timezone.
+     */
+    var currentDateTime by remember {
+        mutableStateOf(
+            LocalDateTime.now(SriLankaZone)
+        )
+    }
+
+    /*
+     * Update the dashboard clock every second.
+     */
+    LaunchedEffect(Unit) {
+
+        while (true) {
+
+            currentDateTime =
+                LocalDateTime.now(SriLankaZone)
+
+            delay(1_000L)
+        }
+    }
 
     val permissionLauncher =
         rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.RequestMultiplePermissions()
+            contract =
+                ActivityResultContracts.RequestMultiplePermissions()
         ) { permissions ->
 
             val granted =
-                permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
-                        permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+                permissions[
+                    Manifest.permission.ACCESS_FINE_LOCATION
+                ] == true ||
+                        permissions[
+                            Manifest.permission.ACCESS_COARSE_LOCATION
+                        ] == true
 
             if (granted) {
                 locationViewModel.checkLocation()
@@ -104,6 +142,7 @@ fun HomeScreen(
         containerColor = Background,
 
         bottomBar = {
+
             BottomNavigationBar(
                 selectedIndex = 0,
                 onItemSelected = onNavigate
@@ -115,11 +154,15 @@ fun HomeScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(
+                    rememberScrollState()
+                )
                 .padding(horizontal = 20.dp)
         ) {
 
-            Spacer(modifier = Modifier.height(18.dp))
+            Spacer(
+                modifier = Modifier.height(18.dp)
+            )
 
             // =========================================================
             // HEADER
@@ -127,12 +170,17 @@ fun HomeScreen(
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+
+                horizontalArrangement =
+                    Arrangement.SpaceBetween,
+
+                verticalAlignment =
+                    Alignment.CenterVertically
             ) {
 
                 Row(
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment =
+                        Alignment.CenterVertically
                 ) {
 
                     EmployeeAvatar(
@@ -140,23 +188,40 @@ fun HomeScreen(
                         imageUrl = employee.imageUrl
                     )
 
-                    Spacer(modifier = Modifier.width(12.dp))
+                    Spacer(
+                        modifier = Modifier.width(12.dp)
+                    )
 
                     Column {
 
                         Text(
-                            text = getGreeting(),
+                            text = getGreeting(
+                                currentDateTime
+                            ),
+
                             color = TextSecondary,
-                            style = MaterialTheme.typography.bodySmall
+
+                            style =
+                                MaterialTheme.typography.bodySmall
                         )
 
-                        Spacer(modifier = Modifier.height(2.dp))
+                        Spacer(
+                            modifier = Modifier.height(2.dp)
+                        )
 
                         Text(
-                            text = employee.name.ifBlank { "Employee" },
+                            text = employee.name
+                                .ifBlank {
+                                    "Employee"
+                                },
+
                             color = TextPrimary,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold
+
+                            style =
+                                MaterialTheme.typography.titleMedium,
+
+                            fontWeight =
+                                FontWeight.SemiBold
                         )
                     }
                 }
@@ -164,44 +229,67 @@ fun HomeScreen(
                 IconButton(
                     onClick = onNotificationsClick
                 ) {
+
                     Icon(
-                        imageVector = Icons.Default.NotificationsNone,
-                        contentDescription = "Notifications",
+                        imageVector =
+                            Icons.Default.NotificationsNone,
+
+                        contentDescription =
+                            "Notifications",
+
                         tint = Navy
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(18.dp))
+            Spacer(
+                modifier = Modifier.height(18.dp)
+            )
 
             // =========================================================
             // DATE + TIME
             // =========================================================
 
-            DashboardDateCard()
+            DashboardDateCard(
+                currentDateTime = currentDateTime
+            )
 
-            Spacer(modifier = Modifier.height(22.dp))
+            Spacer(
+                modifier = Modifier.height(22.dp)
+            )
 
             // =========================================================
-            // WELCOME / DASHBOARD TITLE
+            // DASHBOARD TITLE
             // =========================================================
 
             Text(
                 text = "Your Attendance",
+
                 color = TextPrimary,
-                style = MaterialTheme.typography.headlineSmall,
+
+                style =
+                    MaterialTheme.typography.headlineSmall,
+
                 fontWeight = FontWeight.Bold
             )
 
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Text(
-                text = "Manage your attendance and view today's status.",
-                color = TextSecondary,
-                style = MaterialTheme.typography.bodyMedium
+            Spacer(
+                modifier = Modifier.height(4.dp)
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text =
+                    "Manage your attendance and view today's status.",
+
+                color = TextSecondary,
+
+                style =
+                    MaterialTheme.typography.bodyMedium
+            )
+
+            Spacer(
+                modifier = Modifier.height(16.dp)
+            )
 
             // =========================================================
             // TODAY'S ATTENDANCE
@@ -211,12 +299,18 @@ fun HomeScreen(
                 attendance = attendance,
 
                 onMarkAttendance = {
-                    // Attendance screen handles Check In / Check Out
+
+                    /*
+                     * Attendance screen handles
+                     * Check In / Check Out.
+                     */
                     onNavigate(1)
                 }
             )
 
-            Spacer(modifier = Modifier.height(22.dp))
+            Spacer(
+                modifier = Modifier.height(22.dp)
+            )
 
             // =========================================================
             // WORK LOCATION
@@ -224,10 +318,13 @@ fun HomeScreen(
 
             SectionHeader(
                 title = "Work Location",
-                subtitle = "Attendance location verification"
+                subtitle =
+                    "Attendance location verification"
             )
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(
+                modifier = Modifier.height(10.dp)
+            )
 
             LocationCard(
                 locationState = locationState,
@@ -241,8 +338,11 @@ fun HomeScreen(
 
                         permissionLauncher.launch(
                             arrayOf(
-                                Manifest.permission.ACCESS_FINE_LOCATION,
-                                Manifest.permission.ACCESS_COARSE_LOCATION
+                                Manifest.permission
+                                    .ACCESS_FINE_LOCATION,
+
+                                Manifest.permission
+                                    .ACCESS_COARSE_LOCATION
                             )
                         )
 
@@ -253,7 +353,9 @@ fun HomeScreen(
                 }
             )
 
-            Spacer(modifier = Modifier.height(22.dp))
+            Spacer(
+                modifier = Modifier.height(22.dp)
+            )
 
             // =========================================================
             // MONTHLY OVERVIEW
@@ -261,16 +363,21 @@ fun HomeScreen(
 
             SectionHeader(
                 title = "Monthly Overview",
-                subtitle = "Your attendance at a glance"
+                subtitle =
+                    "Your attendance at a glance"
             )
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(
+                modifier = Modifier.height(10.dp)
+            )
 
             AttendanceSummaryCard(
                 attendanceRecords = monthlyAttendance
             )
 
-            Spacer(modifier = Modifier.height(22.dp))
+            Spacer(
+                modifier = Modifier.height(22.dp)
+            )
 
             // =========================================================
             // RECENT ACTIVITY
@@ -278,23 +385,36 @@ fun HomeScreen(
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+
+                horizontalArrangement =
+                    Arrangement.SpaceBetween,
+
+                verticalAlignment =
+                    Alignment.CenterVertically
             ) {
 
                 Column {
 
                     Text(
                         text = "Recent Activity",
+
                         color = TextPrimary,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold
+
+                        style =
+                            MaterialTheme.typography.titleMedium,
+
+                        fontWeight =
+                            FontWeight.SemiBold
                     )
 
                     Text(
-                        text = "Latest attendance activity",
+                        text =
+                            "Latest attendance activity",
+
                         color = TextSecondary,
-                        style = MaterialTheme.typography.bodySmall
+
+                        style =
+                            MaterialTheme.typography.bodySmall
                     )
                 }
 
@@ -306,21 +426,31 @@ fun HomeScreen(
 
                     Text(
                         text = "View All",
+
                         color = Teal
                     )
 
-                    Spacer(modifier = Modifier.width(2.dp))
+                    Spacer(
+                        modifier = Modifier.width(2.dp)
+                    )
 
                     Icon(
-                        imageVector = Icons.Default.ArrowForward,
+                        imageVector =
+                            Icons.Default.ArrowForward,
+
                         contentDescription = null,
+
                         tint = Teal,
-                        modifier = Modifier.size(16.dp)
+
+                        modifier =
+                            Modifier.size(16.dp)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(
+                modifier = Modifier.height(8.dp)
+            )
 
             if (recentAttendance.isEmpty()) {
 
@@ -331,8 +461,8 @@ fun HomeScreen(
                 /*
                  * Home shows only a small preview.
                  *
-                 * The complete attendance history remains
-                 * on the Attendance screen.
+                 * Complete attendance history remains
+                 * available on the Attendance screen.
                  */
                 recentAttendance
                     .take(2)
@@ -343,12 +473,15 @@ fun HomeScreen(
                         )
 
                         Spacer(
-                            modifier = Modifier.height(8.dp)
+                            modifier =
+                                Modifier.height(8.dp)
                         )
                     }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(
+                modifier = Modifier.height(24.dp)
+            )
         }
     }
 }
@@ -364,37 +497,43 @@ private fun EmployeeAvatar(
     imageUrl: String?
 ) {
 
+    /*
+     * Remember image failure so the UI can immediately
+     * fall back to the employee initial.
+     */
+    var imageLoadFailed by remember(imageUrl) {
+        mutableStateOf(false)
+    }
+
     Box(
         modifier = Modifier
             .size(52.dp)
             .clip(CircleShape)
             .background(TealLight),
+
         contentAlignment = Alignment.Center
     ) {
 
-        if (!imageUrl.isNullOrBlank()) {
+        if (
+            !imageUrl.isNullOrBlank() &&
+            !imageLoadFailed
+        ) {
 
             AsyncImage(
                 model = imageUrl,
-                contentDescription = "$name profile photo",
+
+                contentDescription =
+                    "$name profile photo",
+
                 modifier = Modifier
                     .fillMaxSize()
                     .clip(CircleShape),
-                contentScale = ContentScale.Crop,
 
-                onSuccess = {
-                    Log.d(
-                        "HOME_IMAGE",
-                        "IMAGE LOADED SUCCESSFULLY: $imageUrl"
-                    )
-                },
+                contentScale =
+                    ContentScale.Crop,
 
                 onError = {
-                    Log.e(
-                        "HOME_IMAGE",
-                        "IMAGE LOAD FAILED: $imageUrl | " +
-                                it.result.throwable
-                    )
+                    imageLoadFailed = true
                 }
             )
 
@@ -402,13 +541,17 @@ private fun EmployeeAvatar(
 
             Text(
                 text = name
-                    .ifBlank { "Employee" }
+                    .ifBlank {
+                        "Employee"
+                    }
+                    .trim()
                     .take(1)
                     .uppercase(),
 
                 color = Teal,
 
-                style = MaterialTheme.typography.titleLarge,
+                style =
+                    MaterialTheme.typography.titleLarge,
 
                 fontWeight = FontWeight.Bold
             )
@@ -422,36 +565,35 @@ private fun EmployeeAvatar(
 // =============================================================
 
 @Composable
-private fun DashboardDateCard() {
-
-    val currentDate = LocalDate.now()
+private fun DashboardDateCard(
+    currentDateTime: LocalDateTime
+) {
 
     val dateText =
-        currentDate.format(
-            DateTimeFormatter.ofPattern(
-                "EEEE, dd MMMM yyyy"
-            )
+        currentDateTime.format(
+            DashboardDateFormatter
         )
 
     val timeText =
-        LocalTime.now().format(
-            DateTimeFormatter.ofPattern(
-                "hh:mm a"
-            )
+        currentDateTime.format(
+            DashboardTimeFormatter
         )
 
     Card(
         modifier = Modifier.fillMaxWidth(),
 
-        shape = RoundedCornerShape(18.dp),
+        shape =
+            RoundedCornerShape(18.dp),
 
-        colors = CardDefaults.cardColors(
-            containerColor = CardWhite
-        ),
+        colors =
+            CardDefaults.cardColors(
+                containerColor = CardWhite
+            ),
 
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 0.dp
-        )
+        elevation =
+            CardDefaults.cardElevation(
+                defaultElevation = 0.dp
+            )
     ) {
 
         Row(
@@ -462,7 +604,8 @@ private fun DashboardDateCard() {
                     vertical = 16.dp
                 ),
 
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment =
+                Alignment.CenterVertically
         ) {
 
             Box(
@@ -473,18 +616,27 @@ private fun DashboardDateCard() {
                         shape = CircleShape
                     ),
 
-                contentAlignment = Alignment.Center
+                contentAlignment =
+                    Alignment.Center
             ) {
 
                 Icon(
-                    imageVector = Icons.Default.CalendarMonth,
-                    contentDescription = "Today's date",
+                    imageVector =
+                        Icons.Default.CalendarMonth,
+
+                    contentDescription =
+                        "Today's date",
+
                     tint = Teal,
-                    modifier = Modifier.size(22.dp)
+
+                    modifier =
+                        Modifier.size(22.dp)
                 )
             }
 
-            Spacer(modifier = Modifier.width(14.dp))
+            Spacer(
+                modifier = Modifier.width(14.dp)
+            )
 
             Column(
                 modifier = Modifier.weight(1f)
@@ -492,38 +644,62 @@ private fun DashboardDateCard() {
 
                 Text(
                     text = dateText,
+
                     color = TextPrimary,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold
+
+                    style =
+                        MaterialTheme.typography.titleSmall,
+
+                    fontWeight =
+                        FontWeight.SemiBold
                 )
 
-                Spacer(modifier = Modifier.height(3.dp))
+                Spacer(
+                    modifier = Modifier.height(3.dp)
+                )
 
                 Text(
-                    text = "Today",
+                    text = "Sri Lanka • Today",
+
                     color = TextSecondary,
-                    style = MaterialTheme.typography.bodySmall
+
+                    style =
+                        MaterialTheme.typography.bodySmall
                 )
             }
 
             Column(
-                horizontalAlignment = Alignment.End
+                horizontalAlignment =
+                    Alignment.End
             ) {
 
                 Icon(
-                    imageVector = Icons.Default.AccessTime,
-                    contentDescription = null,
+                    imageVector =
+                        Icons.Default.AccessTime,
+
+                    contentDescription =
+                        "Current time",
+
                     tint = Teal,
-                    modifier = Modifier.size(17.dp)
+
+                    modifier =
+                        Modifier.size(17.dp)
                 )
 
-                Spacer(modifier = Modifier.height(2.dp))
+                Spacer(
+                    modifier = Modifier.height(2.dp)
+                )
 
                 Text(
                     text = timeText,
+
                     color = TextPrimary,
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.SemiBold
+
+                    style =
+                        MaterialTheme.typography.labelLarge,
+
+                    fontWeight =
+                        FontWeight.SemiBold
                 )
             }
         }
@@ -545,17 +721,27 @@ private fun SectionHeader(
 
         Text(
             text = title,
+
             color = TextPrimary,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold
+
+            style =
+                MaterialTheme.typography.titleMedium,
+
+            fontWeight =
+                FontWeight.SemiBold
         )
 
-        Spacer(modifier = Modifier.height(2.dp))
+        Spacer(
+            modifier = Modifier.height(2.dp)
+        )
 
         Text(
             text = subtitle,
+
             color = TextSecondary,
-            style = MaterialTheme.typography.bodySmall
+
+            style =
+                MaterialTheme.typography.bodySmall
         )
     }
 }
@@ -588,7 +774,9 @@ private fun LocationCard(
             iconBackground = TealLight
 
             title = "Location not verified"
-            subtitle = "Verify your location before attendance"
+
+            subtitle =
+                "Verify your location before attendance"
 
             showVerifyButton = true
         }
@@ -599,27 +787,41 @@ private fun LocationCard(
             iconBackground = TealLight
 
             title = "Checking location"
-            subtitle = "Getting your current location..."
+
+            subtitle =
+                "Getting your current location..."
         }
 
         LocationUiState.PermissionRequired -> {
 
-            iconColor = MaterialTheme.colorScheme.error
-            iconBackground = MaterialTheme.colorScheme.errorContainer
+            iconColor =
+                MaterialTheme.colorScheme.error
 
-            title = "Location permission required"
-            subtitle = "Allow location access to continue"
+            iconBackground =
+                MaterialTheme.colorScheme.errorContainer
+
+            title =
+                "Location permission required"
+
+            subtitle =
+                "Allow location access to continue"
 
             showVerifyButton = true
         }
 
         LocationUiState.LocationUnavailable -> {
 
-            iconColor = MaterialTheme.colorScheme.error
-            iconBackground = MaterialTheme.colorScheme.errorContainer
+            iconColor =
+                MaterialTheme.colorScheme.error
 
-            title = "Location unavailable"
-            subtitle = "Turn on your phone location"
+            iconBackground =
+                MaterialTheme.colorScheme.errorContainer
+
+            title =
+                "Location unavailable"
+
+            subtitle =
+                "Turn on your phone location"
 
             showVerifyButton = true
         }
@@ -640,8 +842,11 @@ private fun LocationCard(
 
         is LocationUiState.OutsideOffice -> {
 
-            iconColor = MaterialTheme.colorScheme.error
-            iconBackground = MaterialTheme.colorScheme.errorContainer
+            iconColor =
+                MaterialTheme.colorScheme.error
+
+            iconBackground =
+                MaterialTheme.colorScheme.errorContainer
 
             title = "Outside office"
 
@@ -653,11 +858,17 @@ private fun LocationCard(
 
         is LocationUiState.Error -> {
 
-            iconColor = MaterialTheme.colorScheme.error
-            iconBackground = MaterialTheme.colorScheme.errorContainer
+            iconColor =
+                MaterialTheme.colorScheme.error
 
-            title = "Location check failed"
-            subtitle = locationState.message
+            iconBackground =
+                MaterialTheme.colorScheme.errorContainer
+
+            title =
+                "Location check failed"
+
+            subtitle =
+                locationState.message
 
             showVerifyButton = true
         }
@@ -666,15 +877,18 @@ private fun LocationCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
 
-        shape = RoundedCornerShape(18.dp),
+        shape =
+            RoundedCornerShape(18.dp),
 
-        colors = CardDefaults.cardColors(
-            containerColor = CardWhite
-        ),
+        colors =
+            CardDefaults.cardColors(
+                containerColor = CardWhite
+            ),
 
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 0.dp
-        )
+        elevation =
+            CardDefaults.cardElevation(
+                defaultElevation = 0.dp
+            )
     ) {
 
         Row(
@@ -682,7 +896,8 @@ private fun LocationCard(
                 .fillMaxWidth()
                 .padding(18.dp),
 
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment =
+                Alignment.CenterVertically
         ) {
 
             Box(
@@ -693,7 +908,8 @@ private fun LocationCard(
                         shape = CircleShape
                     ),
 
-                contentAlignment = Alignment.Center
+                contentAlignment =
+                    Alignment.Center
             ) {
 
                 Icon(
@@ -704,15 +920,19 @@ private fun LocationCard(
                             Icons.Default.LocationOn
                         },
 
-                    contentDescription = "Location",
+                    contentDescription =
+                        "Location",
 
                     tint = iconColor,
 
-                    modifier = Modifier.size(23.dp)
+                    modifier =
+                        Modifier.size(23.dp)
                 )
             }
 
-            Spacer(modifier = Modifier.width(14.dp))
+            Spacer(
+                modifier = Modifier.width(14.dp)
+            )
 
             Column(
                 modifier = Modifier.weight(1f)
@@ -720,17 +940,27 @@ private fun LocationCard(
 
                 Text(
                     text = title,
+
                     color = TextPrimary,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold
+
+                    style =
+                        MaterialTheme.typography.titleSmall,
+
+                    fontWeight =
+                        FontWeight.SemiBold
                 )
 
-                Spacer(modifier = Modifier.height(3.dp))
+                Spacer(
+                    modifier = Modifier.height(3.dp)
+                )
 
                 Text(
                     text = subtitle,
+
                     color = TextSecondary,
-                    style = MaterialTheme.typography.bodySmall
+
+                    style =
+                        MaterialTheme.typography.bodySmall
                 )
             }
 
@@ -742,8 +972,11 @@ private fun LocationCard(
 
                     Text(
                         text = "Verify",
+
                         color = Teal,
-                        fontWeight = FontWeight.SemiBold
+
+                        fontWeight =
+                            FontWeight.SemiBold
                     )
                 }
             }
@@ -762,15 +995,18 @@ private fun EmptyRecentAttendance() {
     Card(
         modifier = Modifier.fillMaxWidth(),
 
-        shape = RoundedCornerShape(16.dp),
+        shape =
+            RoundedCornerShape(16.dp),
 
-        colors = CardDefaults.cardColors(
-            containerColor = CardWhite
-        ),
+        colors =
+            CardDefaults.cardColors(
+                containerColor = CardWhite
+            ),
 
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 0.dp
-        )
+        elevation =
+            CardDefaults.cardElevation(
+                defaultElevation = 0.dp
+            )
     ) {
 
         Row(
@@ -778,7 +1014,8 @@ private fun EmptyRecentAttendance() {
                 .fillMaxWidth()
                 .padding(18.dp),
 
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment =
+                Alignment.CenterVertically
         ) {
 
             Box(
@@ -789,34 +1026,53 @@ private fun EmptyRecentAttendance() {
                         shape = CircleShape
                     ),
 
-                contentAlignment = Alignment.Center
+                contentAlignment =
+                    Alignment.Center
             ) {
 
                 Icon(
-                    imageVector = Icons.Default.AccessTime,
+                    imageVector =
+                        Icons.Default.AccessTime,
+
                     contentDescription = null,
+
                     tint = Teal,
-                    modifier = Modifier.size(21.dp)
+
+                    modifier =
+                        Modifier.size(21.dp)
                 )
             }
 
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(
+                modifier = Modifier.width(12.dp)
+            )
 
             Column {
 
                 Text(
                     text = "No recent activity",
+
                     color = TextPrimary,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold
+
+                    style =
+                        MaterialTheme.typography.titleSmall,
+
+                    fontWeight =
+                        FontWeight.SemiBold
                 )
 
-                Spacer(modifier = Modifier.height(3.dp))
+                Spacer(
+                    modifier = Modifier.height(3.dp)
+                )
 
                 Text(
-                    text = "Your attendance activity will appear here.",
+                    text =
+                        "Your attendance activity will appear here.",
+
                     color = TextSecondary,
-                    style = MaterialTheme.typography.bodySmall
+
+                    style =
+                        MaterialTheme.typography.bodySmall
                 )
             }
         }
@@ -828,9 +1084,11 @@ private fun EmptyRecentAttendance() {
 // GREETING
 // =============================================================
 
-private fun getGreeting(): String {
+private fun getGreeting(
+    currentDateTime: LocalDateTime
+): String {
 
-    return when (LocalTime.now().hour) {
+    return when (currentDateTime.hour) {
 
         in 5..11 -> "Good Morning"
 
@@ -839,3 +1097,4 @@ private fun getGreeting(): String {
         else -> "Good Evening"
     }
 }
+
