@@ -1,14 +1,24 @@
 package com.bioverity.attendance.viewmodel
 
+import android.Manifest
+import android.app.Activity
+import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
+
+import androidx.core.app.ActivityCompat
+
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 
 import com.bioverity.attendance.data.api.ApiClient
 import com.bioverity.attendance.data.model.NotificationDto
+import com.bioverity.attendance.notifications.NotificationHelper
 import com.bioverity.attendance.ui.screens.AppNotification
 import com.bioverity.attendance.ui.screens.NotificationType
 
 import java.time.Instant
+import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -18,15 +28,25 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
+
 class NotificationViewModel : ViewModel() {
 
     companion object {
-        private const val TAG = "NotificationViewModel"
-        private const val SRI_LANKA_TIME_ZONE = "Asia/Colombo"
+
+        private const val TAG =
+            "NotificationViewModel"
+
+        private const val SRI_LANKA_TIME_ZONE =
+            "Asia/Colombo"
+
+        private const val NOTIFICATION_PERMISSION_REQUEST_CODE =
+            2001
     }
+
 
     private val sriLankaZone =
         ZoneId.of(SRI_LANKA_TIME_ZONE)
+
 
     private val notificationTimeFormatter =
         DateTimeFormatter.ofPattern(
@@ -40,7 +60,9 @@ class NotificationViewModel : ViewModel() {
     // ----------------------------------------------------
 
     private val _notifications =
-        MutableStateFlow<List<AppNotification>>(emptyList())
+        MutableStateFlow<List<AppNotification>>(
+            emptyList()
+        )
 
     val notifications: StateFlow<List<AppNotification>> =
         _notifications.asStateFlow()
@@ -80,11 +102,59 @@ class NotificationViewModel : ViewModel() {
 
 
     // ----------------------------------------------------
+    // SYSTEM NOTIFICATIONS ALREADY SHOWN
+    // ----------------------------------------------------
+
+    private val shownSystemNotificationIds =
+        mutableSetOf<String>()
+
+
+    // ----------------------------------------------------
+    // ANDROID 13+ NOTIFICATION PERMISSION
+    // ----------------------------------------------------
+
+    fun requestNotificationPermission(
+        context: Context
+    ) {
+
+        if (
+            Build.VERSION.SDK_INT <
+            Build.VERSION_CODES.TIRAMISU
+        ) {
+            return
+        }
+
+
+        if (
+            context.checkSelfPermission(
+                Manifest.permission.POST_NOTIFICATIONS
+            ) ==
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            return
+        }
+
+
+        if (context is Activity) {
+
+            ActivityCompat.requestPermissions(
+                context,
+                arrayOf(
+                    Manifest.permission.POST_NOTIFICATIONS
+                ),
+                NOTIFICATION_PERMISSION_REQUEST_CODE
+            )
+        }
+    }
+
+
+    // ----------------------------------------------------
     // LOAD NOTIFICATIONS
     // ----------------------------------------------------
 
     fun loadNotifications(
-        personId: String
+        personId: String,
+        context: Context? = null
     ) {
 
         if (personId.isBlank()) {
@@ -95,10 +165,13 @@ class NotificationViewModel : ViewModel() {
             return
         }
 
+
         viewModelScope.launch {
 
             _isLoading.value = true
+
             _error.value = null
+
 
             try {
 
@@ -107,6 +180,7 @@ class NotificationViewModel : ViewModel() {
                         personId
                     )
 
+
                 if (response.success) {
 
                     val mappedNotifications =
@@ -114,10 +188,26 @@ class NotificationViewModel : ViewModel() {
                             it.toAppNotification()
                         }
 
+
                     _notifications.value =
                         mappedNotifications
 
+
                     updateUnreadCount()
+
+
+                    // ----------------------------------------
+                    // SHOW REAL ANDROID SYSTEM NOTIFICATIONS
+                    // ----------------------------------------
+
+                    if (context != null) {
+
+                        showNewSystemNotifications(
+                            context = context,
+                            notifications =
+                                response.notifications
+                        )
+                    }
 
                 } else {
 
@@ -140,6 +230,48 @@ class NotificationViewModel : ViewModel() {
 
 
     // ----------------------------------------------------
+    // SHOW SYSTEM NOTIFICATIONS
+    // ----------------------------------------------------
+
+    private fun showNewSystemNotifications(
+        context: Context,
+        notifications: List<NotificationDto>
+    ) {
+
+        notifications
+            .filter {
+
+                val type =
+                    it.type
+                        .trim()
+                        .uppercase()
+
+                val isSystemNotification =
+                    type == "SYSTEM" ||
+                            type == "SYSTEM_NOTIFICATION"
+
+                isSystemNotification &&
+                        !it.is_read &&
+                        it.id !in
+                        shownSystemNotificationIds
+            }
+            .forEach { notification ->
+
+                NotificationHelper.showSystemNotification(
+                    context = context,
+                    title = notification.title,
+                    message = notification.message
+                )
+
+
+                shownSystemNotificationIds.add(
+                    notification.id
+                )
+            }
+    }
+
+
+    // ----------------------------------------------------
     // LOAD UNREAD COUNT
     // ----------------------------------------------------
 
@@ -151,6 +283,7 @@ class NotificationViewModel : ViewModel() {
             return
         }
 
+
         viewModelScope.launch {
 
             try {
@@ -160,6 +293,7 @@ class NotificationViewModel : ViewModel() {
                         .getUnreadNotificationCount(
                             personId
                         )
+
 
                 if (response.success) {
 
@@ -193,13 +327,15 @@ class NotificationViewModel : ViewModel() {
                         notificationId
                     )
 
+
                 if (response.success) {
 
                     _notifications.value =
                         _notifications.value.map {
 
                             if (
-                                it.id == notificationId
+                                it.id ==
+                                notificationId
                             ) {
 
                                 it.copy(
@@ -211,6 +347,7 @@ class NotificationViewModel : ViewModel() {
                                 it
                             }
                         }
+
 
                     updateUnreadCount()
                 }
@@ -237,6 +374,7 @@ class NotificationViewModel : ViewModel() {
             return
         }
 
+
         viewModelScope.launch {
 
             try {
@@ -247,14 +385,17 @@ class NotificationViewModel : ViewModel() {
                             personId
                         )
 
+
                 if (response.success) {
 
                     _notifications.value =
                         _notifications.value.map {
+
                             it.copy(
                                 isRead = true
                             )
                         }
+
 
                     _unreadCount.value = 0
                 }
@@ -287,12 +428,15 @@ class NotificationViewModel : ViewModel() {
                             notificationId
                         )
 
+
                 if (response.success) {
 
                     _notifications.value =
                         _notifications.value.filter {
+
                             it.id != notificationId
                         }
+
 
                     updateUnreadCount()
                 }
@@ -342,10 +486,12 @@ class NotificationViewModel : ViewModel() {
                     NotificationType.CHECK_OUT_REMINDER
 
                 "LOCATION_WARNING" ->
-                    NotificationType.LOCATION_VERIFICATION_FAILED
+                    NotificationType
+                        .LOCATION_VERIFICATION_FAILED
 
                 "LOCATION_VERIFICATION_FAILED" ->
-                    NotificationType.LOCATION_VERIFICATION_FAILED
+                    NotificationType
+                        .LOCATION_VERIFICATION_FAILED
 
                 "SYSTEM" ->
                     NotificationType.SYSTEM_NOTIFICATION
@@ -379,17 +525,7 @@ class NotificationViewModel : ViewModel() {
 
 
     // ----------------------------------------------------
-    // FORMAT TIME
-    //
-    // Backend notification timestamps may arrive as:
-    //
-    // 2026-09-29T08:15:25Z
-    //
-    // or:
-    //
-    // 2026-09-29 13:45:25
-    //
-    // The application displays Asia/Colombo time.
+    // FORMAT NOTIFICATION TIME
     // ----------------------------------------------------
 
     private fun formatNotificationTime(
@@ -400,10 +536,12 @@ class NotificationViewModel : ViewModel() {
             return ""
         }
 
+
         return try {
 
             var normalized =
                 timestamp.trim()
+
 
             if (
                 normalized.contains(" ") &&
@@ -416,6 +554,7 @@ class NotificationViewModel : ViewModel() {
                         "T"
                     )
             }
+
 
             if (
                 normalized.endsWith("+00")
@@ -443,16 +582,13 @@ class NotificationViewModel : ViewModel() {
 
         } catch (e: Exception) {
 
-            /*
-             * If the backend already sends a local
-             * Sri Lanka timestamp without timezone,
-             * parse it as Asia/Colombo.
-             */
+            // Try as Sri Lanka local time.
 
             try {
 
                 var localValue =
                     timestamp.trim()
+
 
                 if (
                     localValue.contains(" ") &&
@@ -468,7 +604,7 @@ class NotificationViewModel : ViewModel() {
 
 
                 val localDateTime =
-                    java.time.LocalDateTime.parse(
+                    LocalDateTime.parse(
                         localValue
                     )
 
