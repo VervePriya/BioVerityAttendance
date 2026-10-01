@@ -448,14 +448,16 @@ class AttendanceViewModel : ViewModel() {
                     "Present"
                 }
 
-            _todayAttendance.value =
-                AttendanceRecord(
-                    date = currentDateText,
-                    checkIn = currentTimeText,
-                    checkOut = null,
-                    status = status,
-                    workingHours = "00h 00m"
-                )
+            val newRecord = AttendanceRecord(
+                date = currentDateText,
+                checkIn = currentTimeText,
+                checkOut = null,
+                status = status,
+                workingHours = "00h 00m"
+            )
+
+            _todayAttendance.value = newRecord
+            updateRecentAttendance(newRecord)
 
             return
         }
@@ -485,12 +487,16 @@ class AttendanceViewModel : ViewModel() {
                         now
                     )
 
-                _todayAttendance.value =
-                    currentAttendance.copy(
-                        date = currentDateText,
-                        checkOut = currentTimeText,
-                        workingHours = workingHours
-                    )
+                val updatedRecord = currentAttendance.copy(
+                    date = currentDateText,
+                    checkOut = currentTimeText,
+                    workingHours = workingHours
+                )
+
+                _todayAttendance.value = updatedRecord
+
+// Immediately update Recent Activity
+                updateRecentAttendance(updatedRecord)
 
             } else {
 
@@ -502,6 +508,26 @@ class AttendanceViewModel : ViewModel() {
                     )
             }
         }
+    }
+    private fun updateRecentAttendance(record: AttendanceRecord) {
+        val currentList = _recentAttendance.value.toMutableList()
+
+        val existingIndex = currentList.indexOfFirst {
+            it.date == record.date
+        }
+
+        if (existingIndex >= 0) {
+            currentList[existingIndex] = record
+        } else {
+            currentList.add(0, record)
+        }
+
+        _recentAttendance.value =
+            currentList
+                .sortedByDescending {
+                    parseDisplayDate(it.date)
+                }
+                .take(7)
     }
 
     // =============================================================

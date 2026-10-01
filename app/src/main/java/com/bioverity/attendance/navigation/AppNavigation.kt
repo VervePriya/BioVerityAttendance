@@ -1,3 +1,4 @@
+
 package com.bioverity.attendance.navigation
 
 import androidx.compose.runtime.Composable
@@ -13,6 +14,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.bioverity.attendance.data.session.AppSession
 import com.bioverity.attendance.ui.LoginScreen
 import com.bioverity.attendance.ui.screens.AttendanceScreen
+import com.bioverity.attendance.ui.screens.CalendarScreen
 import com.bioverity.attendance.ui.screens.FaceRecognitionScreen
 import com.bioverity.attendance.ui.screens.HomeScreen
 import com.bioverity.attendance.ui.screens.NotificationsScreen
@@ -38,6 +40,7 @@ fun AppNavigation() {
     // Shared instance for:
     // Home
     // Attendance
+    // Calendar
     // Face Recognition
 
     val attendanceViewModel: AttendanceViewModel =
@@ -115,6 +118,16 @@ fun AppNavigation() {
 
 
     // ----------------------------------------------------
+    // ATTENDANCE CALENDAR
+    // ----------------------------------------------------
+
+    var showCalendar by remember {
+
+        mutableStateOf(false)
+    }
+
+
+    // ----------------------------------------------------
     // LOGIN SCREEN
     // ----------------------------------------------------
 
@@ -145,6 +158,8 @@ fun AppNavigation() {
                 showFaceRecognition = false
 
                 showNotifications = false
+
+                showCalendar = false
             }
         )
 
@@ -162,7 +177,9 @@ fun AppNavigation() {
             AppSession.getPersonId(context)
 
         if (personId == null) {
+
             showNotifications = false
+
             return
         }
 
@@ -201,6 +218,27 @@ fun AppNavigation() {
 
             attendanceViewModel =
                 attendanceViewModel
+        )
+
+        return
+    }
+
+
+    // ----------------------------------------------------
+    // ATTENDANCE CALENDAR SCREEN
+    // ----------------------------------------------------
+
+    if (showCalendar) {
+
+        CalendarScreen(
+
+            viewModel =
+                attendanceViewModel,
+
+            onBack = {
+
+                showCalendar = false
+            }
         )
 
         return
@@ -257,6 +295,11 @@ fun AppNavigation() {
                 onFaceRecognition = {
 
                     showFaceRecognition = true
+                },
+
+                onCalendarClick = {
+
+                    showCalendar = true
                 }
             )
         }

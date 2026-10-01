@@ -33,6 +33,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -40,6 +42,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.bioverity.attendance.ui.screens.login.LoginViewModel
+import androidx.compose.foundation.Image
+import com.bioverity.attendance.R
 
 @Composable
 fun LoginScreen(
@@ -89,17 +93,17 @@ fun LoginScreen(
                 modifier = Modifier
                     .size(76.dp)
                     .background(
-                        color = Color(0xFF2563EB),
+                        color = Color(0xFFF6F8FB),
                         shape = RoundedCornerShape(22.dp)
                     ),
                 contentAlignment = Alignment.Center
             ) {
 
-                Text(
-                    text = "B",
-                    color = Color.White,
-                    fontSize = 38.sp,
-                    fontWeight = FontWeight.Bold
+                Image(
+                    painter = painterResource(id = R.drawable.logo),
+                    contentDescription = "BioVerity logo",
+                    modifier = Modifier.size(48.dp),
+                    contentScale = ContentScale.Fit
                 )
             }
 

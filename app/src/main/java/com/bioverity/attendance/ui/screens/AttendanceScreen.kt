@@ -1,3 +1,4 @@
+
 package com.bioverity.attendance.ui.screens
 
 import androidx.compose.foundation.background
@@ -27,6 +28,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -38,8 +40,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.font.FontWeight
 import com.bioverity.attendance.data.model.AttendanceRecord
 import com.bioverity.attendance.ui.components.BottomNavigationBar
 import com.bioverity.attendance.ui.theme.Background
@@ -56,8 +58,10 @@ import com.bioverity.attendance.viewmodel.AttendanceViewModel
 fun AttendanceScreen(
     viewModel: AttendanceViewModel,
     onNavigate: (Int) -> Unit,
-    onFaceRecognition: () -> Unit
+    onFaceRecognition: () -> Unit,
+    onCalendarClick: () -> Unit
 ) {
+
     val todayAttendance by
     viewModel.todayAttendance.collectAsState()
 
@@ -145,7 +149,8 @@ fun AttendanceScreen(
             // =====================================================
 
             TodayAttendanceCard(
-                attendance = todayAttendance
+                attendance = todayAttendance,
+                onCalendarClick = onCalendarClick
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -237,7 +242,8 @@ private fun SectionTitle(
 
 @Composable
 private fun TodayAttendanceCard(
-    attendance: AttendanceRecord
+    attendance: AttendanceRecord,
+    onCalendarClick: () -> Unit
 ) {
 
     Card(
@@ -256,7 +262,6 @@ private fun TodayAttendanceCard(
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
 
@@ -280,22 +285,32 @@ private fun TodayAttendanceCard(
                     )
                 }
 
-                Box(
-                    modifier = Modifier
-                        .size(46.dp)
-                        .background(
-                            color = Color.White.copy(alpha = 0.15f),
-                            shape = CircleShape
-                        ),
-                    contentAlignment = Alignment.Center
+                // =================================================
+                // CALENDAR BUTTON
+                // =================================================
+
+                IconButton(
+                    onClick = onCalendarClick,
+                    modifier = Modifier.size(46.dp)
                 ) {
 
-                    Icon(
-                        imageVector = Icons.Default.CalendarMonth,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(24.dp)
-                    )
+                    Box(
+                        modifier = Modifier
+                            .size(46.dp)
+                            .background(
+                                color = Color.White.copy(alpha = 0.15f),
+                                shape = CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+
+                        Icon(
+                            imageVector = Icons.Default.CalendarMonth,
+                            contentDescription = "Open attendance calendar",
+                            tint = Color.White,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
                 }
             }
 
@@ -787,8 +802,12 @@ private fun EmptyAttendanceHistory() {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 28.dp, horizontal = 20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(
+                    vertical = 28.dp,
+                    horizontal = 20.dp
+                ),
+            horizontalAlignment =
+                Alignment.CenterHorizontally
         ) {
 
             Box(
@@ -802,7 +821,8 @@ private fun EmptyAttendanceHistory() {
             ) {
 
                 Icon(
-                    imageVector = Icons.Default.CalendarMonth,
+                    imageVector =
+                        Icons.Default.CalendarMonth,
                     contentDescription = null,
                     tint = Teal,
                     modifier = Modifier.size(26.dp)
