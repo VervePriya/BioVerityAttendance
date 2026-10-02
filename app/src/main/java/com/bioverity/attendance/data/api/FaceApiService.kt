@@ -6,6 +6,9 @@ import com.bioverity.attendance.data.model.LoginResponse
 import com.bioverity.attendance.data.model.NotificationActionResponse
 import com.bioverity.attendance.data.model.NotificationsResponse
 import com.bioverity.attendance.data.model.UnreadNotificationResponse
+import com.bioverity.attendance.data.model.LeaveApplicationRequest
+import com.bioverity.attendance.data.model.LeaveListResponse
+import com.bioverity.attendance.data.model.LeaveResponse
 
 import retrofit2.http.Body
 import retrofit2.http.DELETE
@@ -53,4 +56,13 @@ interface FaceApiService {
     suspend fun deleteNotification(
         @Path("notification_id") notificationId: String
     ): NotificationActionResponse
+
+    @POST("leave")
+    suspend fun submitLeave(
+        @Body request: LeaveApplicationRequest
+    ): LeaveResponse
+    @GET("leave/{personId}")
+    suspend fun getLeaveApplications(
+        @Path("personId") personId: String
+    ): LeaveListResponse
 }

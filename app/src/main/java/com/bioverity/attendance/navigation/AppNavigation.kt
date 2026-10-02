@@ -1,4 +1,3 @@
-
 package com.bioverity.attendance.navigation
 
 import androidx.compose.runtime.Composable
@@ -17,9 +16,11 @@ import com.bioverity.attendance.ui.screens.AttendanceScreen
 import com.bioverity.attendance.ui.screens.CalendarScreen
 import com.bioverity.attendance.ui.screens.FaceRecognitionScreen
 import com.bioverity.attendance.ui.screens.HomeScreen
+import com.bioverity.attendance.ui.screens.LeaveScreen
 import com.bioverity.attendance.ui.screens.NotificationsScreen
 import com.bioverity.attendance.ui.screens.ProfileScreen
 import com.bioverity.attendance.viewmodel.AttendanceViewModel
+import com.bioverity.attendance.viewmodel.LeaveViewModel
 import com.bioverity.attendance.viewmodel.NotificationViewModel
 
 
@@ -37,7 +38,7 @@ fun AppNavigation() {
     // ATTENDANCE VIEW MODEL
     // ----------------------------------------------------
 
-    // Shared instance for:
+    // Shared by:
     // Home
     // Attendance
     // Calendar
@@ -51,12 +52,22 @@ fun AppNavigation() {
     // NOTIFICATION VIEW MODEL
     // ----------------------------------------------------
 
-    // Shared instance for:
-    // Home notification count
-    // Notification screen
-    // Read / delete actions
+    // Shared by:
+    // Home
+    // Notifications
 
     val notificationViewModel: NotificationViewModel =
+        viewModel()
+
+
+    // ----------------------------------------------------
+    // LEAVE VIEW MODEL
+    // ----------------------------------------------------
+
+    // Used by:
+    // Leave Screen
+
+    val leaveViewModel: LeaveViewModel =
         viewModel()
 
 
@@ -83,13 +94,28 @@ fun AppNavigation() {
             attendanceViewModel.loadEmployee(
                 context
             )
+
+            val personId =
+                AppSession.getPersonId(context)
+
+            if (personId != null) {
+
+                leaveViewModel.setPersonId(
+                    personId
+                )
+            }
         }
     }
 
 
     // ----------------------------------------------------
-    // MAIN TAB
+    // MAIN SCREEN
     // ----------------------------------------------------
+
+    // 0 = Home
+    // 1 = Attendance
+    // 2 = Profile
+    // 3 = Leave
 
     var selectedTab by remember {
 
@@ -142,7 +168,7 @@ fun AppNavigation() {
                 // name
                 // email
                 // employee ID
-                // image_url
+                // image URL
                 // person ID
                 //
                 // into AppSession.
@@ -150,6 +176,16 @@ fun AppNavigation() {
                 attendanceViewModel.loadEmployee(
                     context
                 )
+
+                val personId =
+                    AppSession.getPersonId(context)
+
+                if (personId != null) {
+
+                    leaveViewModel.setPersonId(
+                        personId
+                    )
+                }
 
                 isLoggedIn = true
 
@@ -324,5 +360,25 @@ fun AppNavigation() {
                 }
             )
         }
+
+
+        // =================================================
+        // LEAVE
+        // =================================================
+
+        3 -> {
+
+            LeaveScreen(
+
+                viewModel =
+                    leaveViewModel,
+
+                onBack = {
+
+                    selectedTab = 0
+                }
+            )
+        }
     }
 }
+

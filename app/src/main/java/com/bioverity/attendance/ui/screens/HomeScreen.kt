@@ -25,6 +25,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.EventAvailable
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.NotificationsNone
 import androidx.compose.material.icons.filled.Verified
@@ -72,13 +73,18 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
-private val SriLankaZone: ZoneId = ZoneId.of("Asia/Colombo")
+private val SriLankaZone: ZoneId =
+    ZoneId.of("Asia/Colombo")
 
 private val DashboardDateFormatter =
-    DateTimeFormatter.ofPattern("EEEE, dd MMMM yyyy")
+    DateTimeFormatter.ofPattern(
+        "EEEE, dd MMMM yyyy"
+    )
 
 private val DashboardTimeFormatter =
-    DateTimeFormatter.ofPattern("hh:mm:ss a")
+    DateTimeFormatter.ofPattern(
+        "hh:mm:ss a"
+    )
 
 
 @Composable
@@ -89,57 +95,87 @@ fun HomeScreen(
     locationViewModel: LocationViewModel =
         androidx.lifecycle.viewmodel.compose.viewModel()
 ) {
-    val employee by viewModel.employee.collectAsState()
-    val attendance by viewModel.todayAttendance.collectAsState()
-    val recentAttendance by viewModel.recentAttendance.collectAsState()
-    val monthlyAttendance by viewModel.monthlyAttendance.collectAsState()
-    val locationState by locationViewModel.locationState.collectAsState()
 
-    /*
-     * Keep the dashboard clock in Sri Lanka time regardless
-     * of the phone's configured timezone.
-     */
+    val employee by viewModel.employee.collectAsState()
+
+    val attendance by
+    viewModel.todayAttendance.collectAsState()
+
+    val recentAttendance by
+    viewModel.recentAttendance.collectAsState()
+
+    val monthlyAttendance by
+    viewModel.monthlyAttendance.collectAsState()
+
+    val locationState by
+    locationViewModel.locationState.collectAsState()
+
+
+    // =========================================================
+    // SRI LANKA DATE AND TIME
+    // =========================================================
+
     var currentDateTime by remember {
+
         mutableStateOf(
-            LocalDateTime.now(SriLankaZone)
+            LocalDateTime.now(
+                SriLankaZone
+            )
         )
     }
 
-    /*
-     * Update the dashboard clock every second.
-     */
+
     LaunchedEffect(Unit) {
 
         while (true) {
 
             currentDateTime =
-                LocalDateTime.now(SriLankaZone)
+                LocalDateTime.now(
+                    SriLankaZone
+                )
 
             delay(1_000L)
         }
     }
 
+
+    // =========================================================
+    // LOCATION PERMISSION
+    // =========================================================
+
     val permissionLauncher =
         rememberLauncherForActivityResult(
             contract =
-                ActivityResultContracts.RequestMultiplePermissions()
+                ActivityResultContracts
+                    .RequestMultiplePermissions()
         ) { permissions ->
 
             val granted =
                 permissions[
-                    Manifest.permission.ACCESS_FINE_LOCATION
+                    Manifest.permission
+                        .ACCESS_FINE_LOCATION
                 ] == true ||
                         permissions[
-                            Manifest.permission.ACCESS_COARSE_LOCATION
+                            Manifest.permission
+                                .ACCESS_COARSE_LOCATION
                         ] == true
 
             if (granted) {
-                locationViewModel.checkLocation()
+
+                locationViewModel
+                    .checkLocation()
             }
         }
 
+
+    // =========================================================
+    // SCREEN
+    // =========================================================
+
     Scaffold(
-        containerColor = Background,
+
+        containerColor =
+            Background,
 
         bottomBar = {
 
@@ -148,28 +184,36 @@ fun HomeScreen(
                 onItemSelected = onNavigate
             )
         }
+
     ) { paddingValues ->
 
         Column(
+
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
                 .verticalScroll(
                     rememberScrollState()
                 )
-                .padding(horizontal = 20.dp)
+                .padding(
+                    horizontal = 20.dp
+                )
         ) {
 
             Spacer(
-                modifier = Modifier.height(18.dp)
+                modifier =
+                    Modifier.height(18.dp)
             )
 
-            // =========================================================
+
+            // =================================================
             // HEADER
-            // =========================================================
+            // =================================================
 
             Row(
-                modifier = Modifier.fillMaxWidth(),
+
+                modifier =
+                    Modifier.fillMaxWidth(),
 
                 horizontalArrangement =
                     Arrangement.SpaceBetween,
@@ -185,40 +229,51 @@ fun HomeScreen(
 
                     EmployeeAvatar(
                         name = employee.name,
-                        imageUrl = employee.imageUrl
+                        imageUrl =
+                            employee.imageUrl
                     )
 
                     Spacer(
-                        modifier = Modifier.width(12.dp)
+                        modifier =
+                            Modifier.width(12.dp)
                     )
 
                     Column {
 
                         Text(
-                            text = getGreeting(
-                                currentDateTime
-                            ),
+                            text =
+                                getGreeting(
+                                    currentDateTime
+                                ),
 
-                            color = TextSecondary,
+                            color =
+                                TextSecondary,
 
                             style =
-                                MaterialTheme.typography.bodySmall
+                                MaterialTheme
+                                    .typography
+                                    .bodySmall
                         )
 
                         Spacer(
-                            modifier = Modifier.height(2.dp)
+                            modifier =
+                                Modifier.height(2.dp)
                         )
 
                         Text(
-                            text = employee.name
-                                .ifBlank {
-                                    "Employee"
-                                },
+                            text =
+                                employee.name
+                                    .ifBlank {
+                                        "Employee"
+                                    },
 
-                            color = TextPrimary,
+                            color =
+                                TextPrimary,
 
                             style =
-                                MaterialTheme.typography.titleMedium,
+                                MaterialTheme
+                                    .typography
+                                    .titleMedium,
 
                             fontWeight =
                                 FontWeight.SemiBold
@@ -226,118 +281,158 @@ fun HomeScreen(
                     }
                 }
 
+
                 IconButton(
-                    onClick = onNotificationsClick
+                    onClick =
+                        onNotificationsClick
                 ) {
 
                     Icon(
+
                         imageVector =
-                            Icons.Default.NotificationsNone,
+                            Icons.Default
+                                .NotificationsNone,
 
                         contentDescription =
                             "Notifications",
 
-                        tint = Navy
+                        tint =
+                            Navy
                     )
                 }
             }
 
+
             Spacer(
-                modifier = Modifier.height(18.dp)
+                modifier =
+                    Modifier.height(18.dp)
             )
 
-            // =========================================================
+
+            // =================================================
             // DATE + TIME
-            // =========================================================
+            // =================================================
 
             DashboardDateCard(
-                currentDateTime = currentDateTime
+                currentDateTime =
+                    currentDateTime
             )
+
 
             Spacer(
-                modifier = Modifier.height(22.dp)
+                modifier =
+                    Modifier.height(22.dp)
             )
 
-            // =========================================================
+
+            // =================================================
             // DASHBOARD TITLE
-            // =========================================================
+            // =================================================
 
             Text(
-                text = "Your Attendance",
 
-                color = TextPrimary,
+                text =
+                    "Your Attendance",
+
+                color =
+                    TextPrimary,
 
                 style =
-                    MaterialTheme.typography.headlineSmall,
+                    MaterialTheme
+                        .typography
+                        .headlineSmall,
 
-                fontWeight = FontWeight.Bold
+                fontWeight =
+                    FontWeight.Bold
             )
+
 
             Spacer(
-                modifier = Modifier.height(4.dp)
+                modifier =
+                    Modifier.height(4.dp)
             )
 
+
             Text(
+
                 text =
                     "Manage your attendance and view today's status.",
 
-                color = TextSecondary,
+                color =
+                    TextSecondary,
 
                 style =
-                    MaterialTheme.typography.bodyMedium
+                    MaterialTheme
+                        .typography
+                        .bodyMedium
             )
+
 
             Spacer(
-                modifier = Modifier.height(16.dp)
+                modifier =
+                    Modifier.height(16.dp)
             )
 
-            // =========================================================
+
+            // =================================================
             // TODAY'S ATTENDANCE
-            // =========================================================
+            // =================================================
 
             AttendanceStatusCard(
-                attendance = attendance,
+
+                attendance =
+                    attendance,
 
                 onMarkAttendance = {
 
-                    /*
-                     * Attendance screen handles
-                     * Check In / Check Out.
-                     */
                     onNavigate(1)
                 }
             )
 
+
             Spacer(
-                modifier = Modifier.height(22.dp)
+                modifier =
+                    Modifier.height(22.dp)
             )
 
-            // =========================================================
+
+            // =================================================
             // WORK LOCATION
-            // =========================================================
+            // =================================================
 
             SectionHeader(
-                title = "Work Location",
+
+                title =
+                    "Work Location",
+
                 subtitle =
                     "Attendance location verification"
             )
 
+
             Spacer(
-                modifier = Modifier.height(10.dp)
+                modifier =
+                    Modifier.height(10.dp)
             )
 
+
             LocationCard(
-                locationState = locationState,
+
+                locationState =
+                    locationState,
 
                 onVerify = {
 
                     if (
                         locationState is
-                                LocationUiState.PermissionRequired
+                                LocationUiState
+                                .PermissionRequired
                     ) {
 
                         permissionLauncher.launch(
+
                             arrayOf(
+
                                 Manifest.permission
                                     .ACCESS_FINE_LOCATION,
 
@@ -348,43 +443,99 @@ fun HomeScreen(
 
                     } else {
 
-                        locationViewModel.checkLocation()
+                        locationViewModel
+                            .checkLocation()
                     }
                 }
             )
 
+
             Spacer(
-                modifier = Modifier.height(22.dp)
+                modifier =
+                    Modifier.height(22.dp)
             )
 
-            // =========================================================
+
+            // =================================================
             // MONTHLY OVERVIEW
-            // =========================================================
+            // =================================================
 
             SectionHeader(
-                title = "Monthly Overview",
+
+                title =
+                    "Monthly Overview",
+
                 subtitle =
                     "Your attendance at a glance"
             )
 
+
             Spacer(
-                modifier = Modifier.height(10.dp)
+                modifier =
+                    Modifier.height(10.dp)
             )
+
 
             AttendanceSummaryCard(
-                attendanceRecords = monthlyAttendance
+                attendanceRecords =
+                    monthlyAttendance
             )
+
 
             Spacer(
-                modifier = Modifier.height(22.dp)
+                modifier =
+                    Modifier.height(22.dp)
             )
 
-            // =========================================================
+
+            // =================================================
+            // LEAVE MANAGEMENT
+            // =================================================
+
+            SectionHeader(
+
+                title =
+                    "Leave Management",
+
+                subtitle =
+                    "Apply for leave and view your applications"
+            )
+
+
+            Spacer(
+                modifier =
+                    Modifier.height(10.dp)
+            )
+
+
+            LeaveNavigationCard(
+
+                onClick = {
+
+                    /*
+                     * AppNavigation handles:
+                     *
+                     * 3 -> LeaveScreen
+                     */
+                    onNavigate(3)
+                }
+            )
+
+
+            Spacer(
+                modifier =
+                    Modifier.height(22.dp)
+            )
+
+
+            // =================================================
             // RECENT ACTIVITY
-            // =========================================================
+            // =================================================
 
             Row(
-                modifier = Modifier.fillMaxWidth(),
+
+                modifier =
+                    Modifier.fillMaxWidth(),
 
                 horizontalArrangement =
                     Arrangement.SpaceBetween,
@@ -396,51 +547,75 @@ fun HomeScreen(
                 Column {
 
                     Text(
-                        text = "Recent Activity",
 
-                        color = TextPrimary,
+                        text =
+                            "Recent Activity",
+
+                        color =
+                            TextPrimary,
 
                         style =
-                            MaterialTheme.typography.titleMedium,
+                            MaterialTheme
+                                .typography
+                                .titleMedium,
 
                         fontWeight =
                             FontWeight.SemiBold
                     )
 
+
                     Text(
+
                         text =
                             "Latest attendance activity",
 
-                        color = TextSecondary,
+                        color =
+                            TextSecondary,
 
                         style =
-                            MaterialTheme.typography.bodySmall
+                            MaterialTheme
+                                .typography
+                                .bodySmall
                     )
                 }
 
+
                 TextButton(
+
                     onClick = {
+
                         onNavigate(1)
                     }
+
                 ) {
 
                     Text(
-                        text = "View All",
 
-                        color = Teal
+                        text =
+                            "View All",
+
+                        color =
+                            Teal
                     )
+
 
                     Spacer(
-                        modifier = Modifier.width(2.dp)
+                        modifier =
+                            Modifier.width(2.dp)
                     )
 
+
                     Icon(
+
                         imageVector =
-                            Icons.Default.ArrowForward,
+                            Icons.Default
+                                .ArrowForward,
 
-                        contentDescription = null,
+                        contentDescription =
+                            null,
 
-                        tint = Teal,
+                        tint =
+                            Teal,
 
                         modifier =
                             Modifier.size(16.dp)
@@ -448,22 +623,21 @@ fun HomeScreen(
                 }
             }
 
+
             Spacer(
-                modifier = Modifier.height(8.dp)
+                modifier =
+                    Modifier.height(8.dp)
             )
 
-            if (recentAttendance.isEmpty()) {
+
+            if (
+                recentAttendance.isEmpty()
+            ) {
 
                 EmptyRecentAttendance()
 
             } else {
 
-                /*
-                 * Home shows only a small preview.
-                 *
-                 * Complete attendance history remains
-                 * available on the Attendance screen.
-                 */
                 recentAttendance
                     .take(2)
                     .forEach { record ->
@@ -479,8 +653,159 @@ fun HomeScreen(
                     }
             }
 
+
             Spacer(
-                modifier = Modifier.height(24.dp)
+                modifier =
+                    Modifier.height(24.dp)
+            )
+        }
+    }
+}
+
+
+// =============================================================
+// LEAVE NAVIGATION CARD
+// =============================================================
+
+@Composable
+private fun LeaveNavigationCard(
+    onClick: () -> Unit
+) {
+
+    Card(
+
+        modifier =
+            Modifier.fillMaxWidth(),
+
+        onClick =
+            onClick,
+
+        shape =
+            RoundedCornerShape(18.dp),
+
+        colors =
+            CardDefaults.cardColors(
+                containerColor =
+                    CardWhite
+            ),
+
+        elevation =
+            CardDefaults.cardElevation(
+                defaultElevation =
+                    0.dp
+            )
+    ) {
+
+        Row(
+
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(18.dp),
+
+            verticalAlignment =
+                Alignment.CenterVertically
+        ) {
+
+            Box(
+
+                modifier =
+                    Modifier
+                        .size(46.dp)
+                        .background(
+                            color =
+                                TealLight,
+                            shape =
+                                CircleShape
+                        ),
+
+                contentAlignment =
+                    Alignment.Center
+            ) {
+
+                Icon(
+
+                    imageVector =
+                        Icons.Default
+                            .EventAvailable,
+
+                    contentDescription =
+                        "Leave",
+
+                    tint =
+                        Teal,
+
+                    modifier =
+                        Modifier.size(24.dp)
+                )
+            }
+
+
+            Spacer(
+                modifier =
+                    Modifier.width(14.dp)
+            )
+
+
+            Column(
+                modifier =
+                    Modifier.weight(1f)
+            ) {
+
+                Text(
+
+                    text =
+                        "Apply for Leave",
+
+                    color =
+                        TextPrimary,
+
+                    style =
+                        MaterialTheme
+                            .typography
+                            .titleSmall,
+
+                    fontWeight =
+                        FontWeight.SemiBold
+                )
+
+
+                Spacer(
+                    modifier =
+                        Modifier.height(3.dp)
+                )
+
+
+                Text(
+
+                    text =
+                        "Submit a new leave request or check your leave status.",
+
+                    color =
+                        TextSecondary,
+
+                    style =
+                        MaterialTheme
+                            .typography
+                            .bodySmall
+                )
+            }
+
+
+            Icon(
+
+                imageVector =
+                    Icons.Default
+                        .ArrowForward,
+
+                contentDescription =
+                    "Open Leave",
+
+                tint =
+                    Teal,
+
+                modifier =
+                    Modifier.size(22.dp)
             )
         }
     }
@@ -497,21 +822,26 @@ private fun EmployeeAvatar(
     imageUrl: String?
 ) {
 
-    /*
-     * Remember image failure so the UI can immediately
-     * fall back to the employee initial.
-     */
-    var imageLoadFailed by remember(imageUrl) {
+    var imageLoadFailed by remember(
+        imageUrl
+    ) {
+
         mutableStateOf(false)
     }
 
-    Box(
-        modifier = Modifier
-            .size(52.dp)
-            .clip(CircleShape)
-            .background(TealLight),
 
-        contentAlignment = Alignment.Center
+    Box(
+
+        modifier =
+            Modifier
+                .size(52.dp)
+                .clip(CircleShape)
+                .background(
+                    TealLight
+                ),
+
+        contentAlignment =
+            Alignment.Center
     ) {
 
         if (
@@ -520,40 +850,53 @@ private fun EmployeeAvatar(
         ) {
 
             AsyncImage(
-                model = imageUrl,
+
+                model =
+                    imageUrl,
 
                 contentDescription =
                     "$name profile photo",
 
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clip(CircleShape),
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .clip(
+                            CircleShape
+                        ),
 
                 contentScale =
                     ContentScale.Crop,
 
                 onError = {
-                    imageLoadFailed = true
+
+                    imageLoadFailed =
+                        true
                 }
             )
 
         } else {
 
             Text(
-                text = name
-                    .ifBlank {
-                        "Employee"
-                    }
-                    .trim()
-                    .take(1)
-                    .uppercase(),
 
-                color = Teal,
+                text =
+                    name
+                        .ifBlank {
+                            "Employee"
+                        }
+                        .trim()
+                        .take(1)
+                        .uppercase(),
+
+                color =
+                    Teal,
 
                 style =
-                    MaterialTheme.typography.titleLarge,
+                    MaterialTheme
+                        .typography
+                        .titleLarge,
 
-                fontWeight = FontWeight.Bold
+                fontWeight =
+                    FontWeight.Bold
             )
         }
     }
@@ -579,124 +922,168 @@ private fun DashboardDateCard(
             DashboardTimeFormatter
         )
 
+
     Card(
-        modifier = Modifier.fillMaxWidth(),
+
+        modifier =
+            Modifier.fillMaxWidth(),
 
         shape =
             RoundedCornerShape(18.dp),
 
         colors =
             CardDefaults.cardColors(
-                containerColor = CardWhite
+                containerColor =
+                    CardWhite
             ),
 
         elevation =
             CardDefaults.cardElevation(
-                defaultElevation = 0.dp
+                defaultElevation =
+                    0.dp
             )
     ) {
 
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(
-                    horizontal = 18.dp,
-                    vertical = 16.dp
-                ),
+
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        horizontal = 18.dp,
+                        vertical = 16.dp
+                    ),
 
             verticalAlignment =
                 Alignment.CenterVertically
         ) {
 
             Box(
-                modifier = Modifier
-                    .size(44.dp)
-                    .background(
-                        color = TealLight,
-                        shape = CircleShape
-                    ),
+
+                modifier =
+                    Modifier
+                        .size(44.dp)
+                        .background(
+                            color =
+                                TealLight,
+                            shape =
+                                CircleShape
+                        ),
 
                 contentAlignment =
                     Alignment.Center
             ) {
 
                 Icon(
+
                     imageVector =
-                        Icons.Default.CalendarMonth,
+                        Icons.Default
+                            .CalendarMonth,
 
                     contentDescription =
                         "Today's date",
 
-                    tint = Teal,
+                    tint =
+                        Teal,
 
                     modifier =
                         Modifier.size(22.dp)
                 )
             }
 
+
             Spacer(
-                modifier = Modifier.width(14.dp)
+                modifier =
+                    Modifier.width(14.dp)
             )
 
+
             Column(
-                modifier = Modifier.weight(1f)
+                modifier =
+                    Modifier.weight(1f)
             ) {
 
                 Text(
-                    text = dateText,
 
-                    color = TextPrimary,
+                    text =
+                        dateText,
+
+                    color =
+                        TextPrimary,
 
                     style =
-                        MaterialTheme.typography.titleSmall,
+                        MaterialTheme
+                            .typography
+                            .titleSmall,
 
                     fontWeight =
                         FontWeight.SemiBold
                 )
 
+
                 Spacer(
-                    modifier = Modifier.height(3.dp)
+                    modifier =
+                        Modifier.height(3.dp)
                 )
 
-                Text(
-                    text = "Sri Lanka • Today",
 
-                    color = TextSecondary,
+                Text(
+
+                    text =
+                        "Sri Lanka • Today",
+
+                    color =
+                        TextSecondary,
 
                     style =
-                        MaterialTheme.typography.bodySmall
+                        MaterialTheme
+                            .typography
+                            .bodySmall
                 )
             }
 
+
             Column(
+
                 horizontalAlignment =
                     Alignment.End
             ) {
 
                 Icon(
+
                     imageVector =
-                        Icons.Default.AccessTime,
+                        Icons.Default
+                            .AccessTime,
 
                     contentDescription =
                         "Current time",
 
-                    tint = Teal,
+                    tint =
+                        Teal,
 
                     modifier =
                         Modifier.size(17.dp)
                 )
 
+
                 Spacer(
-                    modifier = Modifier.height(2.dp)
+                    modifier =
+                        Modifier.height(2.dp)
                 )
 
-                Text(
-                    text = timeText,
 
-                    color = TextPrimary,
+                Text(
+
+                    text =
+                        timeText,
+
+                    color =
+                        TextPrimary,
 
                     style =
-                        MaterialTheme.typography.labelLarge,
+                        MaterialTheme
+                            .typography
+                            .labelLarge,
 
                     fontWeight =
                         FontWeight.SemiBold
@@ -720,28 +1107,41 @@ private fun SectionHeader(
     Column {
 
         Text(
-            text = title,
 
-            color = TextPrimary,
+            text =
+                title,
+
+            color =
+                TextPrimary,
 
             style =
-                MaterialTheme.typography.titleMedium,
+                MaterialTheme
+                    .typography
+                    .titleMedium,
 
             fontWeight =
                 FontWeight.SemiBold
         )
 
+
         Spacer(
-            modifier = Modifier.height(2.dp)
+            modifier =
+                Modifier.height(2.dp)
         )
 
-        Text(
-            text = subtitle,
 
-            color = TextSecondary,
+        Text(
+
+            text =
+                subtitle,
+
+            color =
+                TextSecondary,
 
             style =
-                MaterialTheme.typography.bodySmall
+                MaterialTheme
+                    .typography
+                    .bodySmall
         )
     }
 }
@@ -763,42 +1163,61 @@ private fun LocationCard(
     var title: String
     var subtitle: String
 
-    var showVerifyButton = false
-    var verified = false
+    var showVerifyButton =
+        false
+
+    var verified =
+        false
+
 
     when (locationState) {
 
         LocationUiState.NotChecked -> {
 
-            iconColor = Teal
-            iconBackground = TealLight
+            iconColor =
+                Teal
 
-            title = "Location not verified"
+            iconBackground =
+                TealLight
+
+            title =
+                "Location not verified"
 
             subtitle =
                 "Verify your location before attendance"
 
-            showVerifyButton = true
+            showVerifyButton =
+                true
         }
+
 
         LocationUiState.Checking -> {
 
-            iconColor = Teal
-            iconBackground = TealLight
+            iconColor =
+                Teal
 
-            title = "Checking location"
+            iconBackground =
+                TealLight
+
+            title =
+                "Checking location"
 
             subtitle =
                 "Getting your current location..."
         }
 
+
         LocationUiState.PermissionRequired -> {
 
             iconColor =
-                MaterialTheme.colorScheme.error
+                MaterialTheme
+                    .colorScheme
+                    .error
 
             iconBackground =
-                MaterialTheme.colorScheme.errorContainer
+                MaterialTheme
+                    .colorScheme
+                    .errorContainer
 
             title =
                 "Location permission required"
@@ -806,16 +1225,22 @@ private fun LocationCard(
             subtitle =
                 "Allow location access to continue"
 
-            showVerifyButton = true
+            showVerifyButton =
+                true
         }
+
 
         LocationUiState.LocationUnavailable -> {
 
             iconColor =
-                MaterialTheme.colorScheme.error
+                MaterialTheme
+                    .colorScheme
+                    .error
 
             iconBackground =
-                MaterialTheme.colorScheme.errorContainer
+                MaterialTheme
+                    .colorScheme
+                    .errorContainer
 
             title =
                 "Location unavailable"
@@ -823,46 +1248,65 @@ private fun LocationCard(
             subtitle =
                 "Turn on your phone location"
 
-            showVerifyButton = true
+            showVerifyButton =
+                true
         }
+
 
         is LocationUiState.Verified -> {
 
-            iconColor = Success
-            iconBackground = SuccessLight
+            iconColor =
+                Success
 
-            title = "Location verified"
+            iconBackground =
+                SuccessLight
+
+            title =
+                "Location verified"
 
             subtitle =
                 "Office confirmed • " +
                         "${locationState.distanceMeters.toInt()} m away"
 
-            verified = true
+            verified =
+                true
         }
+
 
         is LocationUiState.OutsideOffice -> {
 
             iconColor =
-                MaterialTheme.colorScheme.error
+                MaterialTheme
+                    .colorScheme
+                    .error
 
             iconBackground =
-                MaterialTheme.colorScheme.errorContainer
+                MaterialTheme
+                    .colorScheme
+                    .errorContainer
 
-            title = "Outside office"
+            title =
+                "Outside office"
 
             subtitle =
                 "${locationState.distanceMeters.toInt()} m from office"
 
-            showVerifyButton = true
+            showVerifyButton =
+                true
         }
+
 
         is LocationUiState.Error -> {
 
             iconColor =
-                MaterialTheme.colorScheme.error
+                MaterialTheme
+                    .colorScheme
+                    .error
 
             iconBackground =
-                MaterialTheme.colorScheme.errorContainer
+                MaterialTheme
+                    .colorScheme
+                    .errorContainer
 
             title =
                 "Location check failed"
@@ -870,110 +1314,151 @@ private fun LocationCard(
             subtitle =
                 locationState.message
 
-            showVerifyButton = true
+            showVerifyButton =
+                true
         }
     }
 
+
     Card(
-        modifier = Modifier.fillMaxWidth(),
+
+        modifier =
+            Modifier.fillMaxWidth(),
 
         shape =
             RoundedCornerShape(18.dp),
 
         colors =
             CardDefaults.cardColors(
-                containerColor = CardWhite
+                containerColor =
+                    CardWhite
             ),
 
         elevation =
             CardDefaults.cardElevation(
-                defaultElevation = 0.dp
+                defaultElevation =
+                    0.dp
             )
     ) {
 
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(18.dp),
+
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(18.dp),
 
             verticalAlignment =
                 Alignment.CenterVertically
         ) {
 
             Box(
-                modifier = Modifier
-                    .size(46.dp)
-                    .background(
-                        color = iconBackground,
-                        shape = CircleShape
-                    ),
+
+                modifier =
+                    Modifier
+                        .size(46.dp)
+                        .background(
+                            color =
+                                iconBackground,
+                            shape =
+                                CircleShape
+                        ),
 
                 contentAlignment =
                     Alignment.Center
             ) {
 
                 Icon(
+
                     imageVector =
+
                         if (verified) {
+
                             Icons.Default.Verified
+
                         } else {
-                            Icons.Default.LocationOn
+
+                            Icons.Default
+                                .LocationOn
                         },
 
                     contentDescription =
                         "Location",
 
-                    tint = iconColor,
+                    tint =
+                        iconColor,
 
                     modifier =
                         Modifier.size(23.dp)
                 )
             }
 
+
             Spacer(
-                modifier = Modifier.width(14.dp)
+                modifier =
+                    Modifier.width(14.dp)
             )
 
+
             Column(
-                modifier = Modifier.weight(1f)
+                modifier =
+                    Modifier.weight(1f)
             ) {
 
                 Text(
-                    text = title,
 
-                    color = TextPrimary,
+                    text =
+                        title,
+
+                    color =
+                        TextPrimary,
 
                     style =
-                        MaterialTheme.typography.titleSmall,
+                        MaterialTheme
+                            .typography
+                            .titleSmall,
 
                     fontWeight =
                         FontWeight.SemiBold
                 )
 
+
                 Spacer(
-                    modifier = Modifier.height(3.dp)
+                    modifier =
+                        Modifier.height(3.dp)
                 )
+
 
                 Text(
-                    text = subtitle,
 
-                    color = TextSecondary,
+                    text =
+                        subtitle,
+
+                    color =
+                        TextSecondary,
 
                     style =
-                        MaterialTheme.typography.bodySmall
+                        MaterialTheme
+                            .typography
+                            .bodySmall
                 )
             }
+
 
             if (showVerifyButton) {
 
                 TextButton(
-                    onClick = onVerify
+                    onClick =
+                        onVerify
                 ) {
 
                     Text(
-                        text = "Verify",
 
-                        color = Teal,
+                        text =
+                            "Verify",
+
+                        color =
+                            Teal,
 
                         fontWeight =
                             FontWeight.SemiBold
@@ -993,86 +1478,115 @@ private fun LocationCard(
 private fun EmptyRecentAttendance() {
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+
+        modifier =
+            Modifier.fillMaxWidth(),
 
         shape =
             RoundedCornerShape(16.dp),
 
         colors =
             CardDefaults.cardColors(
-                containerColor = CardWhite
+                containerColor =
+                    CardWhite
             ),
 
         elevation =
             CardDefaults.cardElevation(
-                defaultElevation = 0.dp
+                defaultElevation =
+                    0.dp
             )
     ) {
 
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(18.dp),
+
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(18.dp),
 
             verticalAlignment =
                 Alignment.CenterVertically
         ) {
 
             Box(
-                modifier = Modifier
-                    .size(42.dp)
-                    .background(
-                        color = TealLight,
-                        shape = CircleShape
-                    ),
+
+                modifier =
+                    Modifier
+                        .size(42.dp)
+                        .background(
+                            color =
+                                TealLight,
+                            shape =
+                                CircleShape
+                        ),
 
                 contentAlignment =
                     Alignment.Center
             ) {
 
                 Icon(
+
                     imageVector =
-                        Icons.Default.AccessTime,
+                        Icons.Default
+                            .AccessTime,
 
-                    contentDescription = null,
+                    contentDescription =
+                        null,
 
-                    tint = Teal,
+                    tint =
+                        Teal,
 
                     modifier =
                         Modifier.size(21.dp)
                 )
             }
 
+
             Spacer(
-                modifier = Modifier.width(12.dp)
+                modifier =
+                    Modifier.width(12.dp)
             )
+
 
             Column {
 
                 Text(
-                    text = "No recent activity",
 
-                    color = TextPrimary,
+                    text =
+                        "No recent activity",
+
+                    color =
+                        TextPrimary,
 
                     style =
-                        MaterialTheme.typography.titleSmall,
+                        MaterialTheme
+                            .typography
+                            .titleSmall,
 
                     fontWeight =
                         FontWeight.SemiBold
                 )
 
+
                 Spacer(
-                    modifier = Modifier.height(3.dp)
+                    modifier =
+                        Modifier.height(3.dp)
                 )
 
+
                 Text(
+
                     text =
                         "Your attendance activity will appear here.",
 
-                    color = TextSecondary,
+                    color =
+                        TextSecondary,
 
                     style =
-                        MaterialTheme.typography.bodySmall
+                        MaterialTheme
+                            .typography
+                            .bodySmall
                 )
             }
         }
@@ -1090,11 +1604,14 @@ private fun getGreeting(
 
     return when (currentDateTime.hour) {
 
-        in 5..11 -> "Good Morning"
+        in 5..11 ->
+            "Good Morning"
 
-        in 12..16 -> "Good Afternoon"
+        in 12..16 ->
+            "Good Afternoon"
 
-        else -> "Good Evening"
+        else ->
+            "Good Evening"
     }
 }
 

@@ -55,6 +55,89 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 
+// ================================================================
+// COLORS
+// ================================================================
+
+private val PoyaColor = Color(0xFF1976D2)
+private val LateColor = Color(0xFFFFA726)
+private val AbsentColor = Color(0xFFE57373)
+private val HolidayBackground = Color(0xFFE3F2FD)
+
+
+// ================================================================
+// SRI LANKAN POYA HOLIDAYS - 2026
+// ================================================================
+//
+// Official Sri Lankan 2026 Poya dates.
+//
+// These dates should be updated each year or, for a production
+// system, preferably loaded from a backend holiday table.
+// ================================================================
+
+private val poyaHolidays2026: Map<LocalDate, String> = mapOf(
+
+    LocalDate.of(2026, 1, 3) to
+            "Duruthu Full Moon Poya Day",
+
+    LocalDate.of(2026, 2, 1) to
+            "Navam Full Moon Poya Day",
+
+    LocalDate.of(2026, 3, 2) to
+            "Medin Full Moon Poya Day",
+
+    LocalDate.of(2026, 4, 1) to
+            "Bak Full Moon Poya Day",
+
+    LocalDate.of(2026, 5, 1) to
+            "Vesak Full Moon Poya Day",
+
+    LocalDate.of(2026, 5, 30) to
+            "Adhi Poson Full Moon Poya Day",
+
+    LocalDate.of(2026, 6, 29) to
+            "Poson Full Moon Poya Day",
+
+    LocalDate.of(2026, 7, 29) to
+            "Esala Full Moon Poya Day",
+
+    LocalDate.of(2026, 8, 27) to
+            "Nikini Full Moon Poya Day",
+
+    LocalDate.of(2026, 9, 26) to
+            "Binara Full Moon Poya Day",
+
+    LocalDate.of(2026, 10, 25) to
+            "Vap Full Moon Poya Day",
+
+    LocalDate.of(2026, 11, 24) to
+            "Il Full Moon Poya Day",
+
+    LocalDate.of(2026, 12, 23) to
+            "Unduvap Full Moon Poya Day"
+)
+
+
+// ================================================================
+// FIND POYA HOLIDAY
+// ================================================================
+
+private fun getPoyaHoliday(
+    date: LocalDate
+): String? {
+
+    return if (date.year == 2026) {
+        poyaHolidays2026[date]
+    } else {
+        null
+    }
+}
+
+
+// ================================================================
+// CALENDAR SCREEN
+// ================================================================
+
 @Composable
 fun CalendarScreen(
     viewModel: AttendanceViewModel,
@@ -113,11 +196,6 @@ fun CalendarScreen(
 
     // =========================================================
     // DATABASE DATE FORMAT
-    //
-    // Your ViewModel uses:
-    // "dd MMM yyyy"
-    // Example:
-    // "01 Oct 2026"
     // =========================================================
 
     val attendanceDateFormatter =
@@ -152,6 +230,14 @@ fun CalendarScreen(
 
 
     // =========================================================
+    // SELECTED POYA HOLIDAY
+    // =========================================================
+
+    val selectedPoyaHoliday =
+        getPoyaHoliday(selectedDate)
+
+
+    // =========================================================
     // CALENDAR INFORMATION
     // =========================================================
 
@@ -160,6 +246,7 @@ fun CalendarScreen(
 
     val daysInMonth =
         displayedMonth.lengthOfMonth()
+
 
     // Monday = 0
     // Tuesday = 1
@@ -490,6 +577,10 @@ fun CalendarScreen(
                                 )
 
 
+                            // ---------------------------------
+                            // ATTENDANCE
+                            // ---------------------------------
+
                             val attendance =
                                 monthlyAttendance.firstOrNull {
 
@@ -508,10 +599,15 @@ fun CalendarScreen(
 
 
                             // ---------------------------------
-                            // IMPORTANT:
-                            //
-                            // weight is given HERE,
-                            // inside the Row.
+                            // POYA HOLIDAY
+                            // ---------------------------------
+
+                            val poyaHoliday =
+                                getPoyaHoliday(date)
+
+
+                            // ---------------------------------
+                            // CALENDAR DAY
                             // ---------------------------------
 
                             CalendarDay(
@@ -523,6 +619,9 @@ fun CalendarScreen(
 
                                 attendance =
                                     attendance,
+
+                                poyaHoliday =
+                                    poyaHoliday,
 
                                 isToday =
                                     date == today,
@@ -557,7 +656,7 @@ fun CalendarScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(
-                    horizontal = 20.dp
+                    horizontal = 12.dp
                 ),
 
             horizontalArrangement =
@@ -571,26 +670,35 @@ fun CalendarScreen(
 
             Spacer(
                 modifier =
-                    Modifier.size(20.dp)
+                    Modifier.size(12.dp)
             )
 
             CalendarLegend(
                 color =
-                    Color(0xFFFFA726),
-
+                    LateColor,
                 text = "Late"
             )
 
             Spacer(
                 modifier =
-                    Modifier.size(20.dp)
+                    Modifier.size(12.dp)
             )
 
             CalendarLegend(
                 color =
-                    Color(0xFFE57373),
-
+                    AbsentColor,
                 text = "Absent"
+            )
+
+            Spacer(
+                modifier =
+                    Modifier.size(12.dp)
+            )
+
+            CalendarLegend(
+                color =
+                    PoyaColor,
+                text = "Poya Holiday"
             )
         }
 
@@ -652,7 +760,27 @@ fun CalendarScreen(
                 )
 
 
-                if (selectedAttendance == null) {
+                // =================================================
+                // POYA HOLIDAY HAS PRIORITY
+                // =================================================
+
+                if (selectedPoyaHoliday != null) {
+
+                    AttendanceDetailRow(
+                        label = "Status",
+
+                        value =
+                            "Poya Holiday"
+                    )
+
+                    AttendanceDetailRow(
+                        label = "Holiday",
+
+                        value =
+                            selectedPoyaHoliday
+                    )
+
+                } else if (selectedAttendance == null) {
 
                     Text(
                         text =
@@ -711,16 +839,24 @@ private fun CalendarDay(
     modifier: Modifier,
     date: LocalDate,
     attendance: AttendanceRecord?,
+    poyaHoliday: String?,
     isToday: Boolean,
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
 
+    // =============================================================
+    // BACKGROUND
+    // =============================================================
+
     val backgroundColor =
         when {
 
             isSelected ->
-                Color(0xFF1976D2)
+                PoyaColor
+
+            poyaHoliday != null ->
+                HolidayBackground
 
             isToday ->
                 Color(0xFFE3F2FD)
@@ -730,11 +866,18 @@ private fun CalendarDay(
         }
 
 
+    // =============================================================
+    // TEXT COLOR
+    // =============================================================
+
     val textColor =
         when {
 
             isSelected ->
                 Color.White
+
+            poyaHoliday != null ->
+                PoyaColor
 
             else ->
                 TextPrimary
@@ -771,7 +914,8 @@ private fun CalendarDay(
             fontWeight =
                 if (
                     isToday ||
-                    isSelected
+                    isSelected ||
+                    poyaHoliday != null
                 ) {
                     FontWeight.Bold
                 } else {
@@ -783,26 +927,66 @@ private fun CalendarDay(
         )
 
 
-        if (attendance != null) {
+        Spacer(
+            modifier =
+                Modifier.height(4.dp)
+        )
 
-            Spacer(
-                modifier =
-                    Modifier.height(4.dp)
-            )
 
-            Box(
-                modifier = Modifier
-                    .size(7.dp)
-                    .background(
-                        color =
-                            getAttendanceColor(
-                                attendance.status
-                            ),
+        // =========================================================
+        // STATUS INDICATOR
+        // =========================================================
 
-                        shape =
-                            CircleShape
-                    )
-            )
+        when {
+
+            // -----------------------------------------------------
+            // POYA HOLIDAY
+            // -----------------------------------------------------
+
+            poyaHoliday != null -> {
+
+                Box(
+                    modifier = Modifier
+                        .size(7.dp)
+                        .background(
+                            color =
+                                if (isSelected) {
+                                    Color.White
+                                } else {
+                                    PoyaColor
+                                },
+
+                            shape =
+                                CircleShape
+                        )
+                )
+            }
+
+
+            // -----------------------------------------------------
+            // ATTENDANCE
+            // -----------------------------------------------------
+
+            attendance != null -> {
+
+                Box(
+                    modifier = Modifier
+                        .size(7.dp)
+                        .background(
+                            color =
+                                if (isSelected) {
+                                    Color.White
+                                } else {
+                                    getAttendanceColor(
+                                        attendance.status
+                                    )
+                                },
+
+                            shape =
+                                CircleShape
+                        )
+                )
+            }
         }
     }
 }
@@ -840,7 +1024,7 @@ private fun CalendarLegend(
         Text(
             text = text,
 
-            fontSize = 11.sp,
+            fontSize = 10.sp,
 
             color =
                 TextSecondary
@@ -914,15 +1098,16 @@ private fun getAttendanceColor(
             "Late",
             ignoreCase = true
         ) ->
-            Color(0xFFFFA726)
+            LateColor
 
         status.equals(
             "Absent",
             ignoreCase = true
         ) ->
-            Color(0xFFE57373)
+            AbsentColor
 
         else ->
             Color(0xFFBDBDBD)
     }
 }
+
