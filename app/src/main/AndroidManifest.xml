@@ -2,25 +2,34 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- Camera -->
     <uses-permission android:name="android.permission.CAMERA" />
+
     <uses-feature
         android:name="android.hardware.camera"
-        android:required="true" />
+        android:required="false" />
 
+    <!-- Internet -->
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Location -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+
+    <!-- Notifications -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <application
         android:allowBackup="true"
         android:usesCleartextTraffic="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@mipmap/bioverity_logo"
         android:label="@string/app_name"
-        android:roundIcon="@mipmap/ic_launcher_round"
+        android:roundIcon="@mipmap/bioverity_logo"
         android:supportsRtl="true"
         android:theme="@style/Theme.BioVerityAttendance">
+
         <activity
             android:name=".MainActivity"
             android:launchMode="singleTop"
@@ -28,11 +37,14 @@
             android:label="@string/app_name"
             android:theme="@style/Theme.BioVerityAttendance"
             android:windowSoftInputMode="adjustResize">
-            <!-- NORMAL APP LAUNCH -->
+
+            <!-- Normal app launch -->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
+            <!-- Password reset deep link -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
 
@@ -43,7 +55,9 @@
                     android:scheme="bioverity"
                     android:host="reset-password" />
             </intent-filter>
+
         </activity>
+
     </application>
 
 </manifest>
