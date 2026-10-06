@@ -43,11 +43,13 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.bioverity.attendance.ui.screens.login.LoginViewModel
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import com.bioverity.attendance.R
 
 @Composable
 fun LoginScreen(
     onLoginSuccess: () -> Unit,
+    onForgotPassword: () -> Unit,
     viewModel: LoginViewModel = viewModel()
 ) {
 
@@ -249,7 +251,10 @@ fun LoginScreen(
                 text = "Forgot Password?",
                 modifier = Modifier
                     .align(Alignment.End)
-                    .padding(vertical = 4.dp),
+                    .padding(vertical = 4.dp)
+                    .clickable {
+                        onForgotPassword()
+                    },
                 color = Color(0xFF2563EB),
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium

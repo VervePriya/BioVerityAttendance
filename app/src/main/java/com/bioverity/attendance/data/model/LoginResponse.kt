@@ -24,12 +24,14 @@ data class LoginResponse(
 
     @SerializedName("email_used")
     val emailUsed: String? = null,
+
     @SerializedName("image_url")
     val imageUrl: String? = null,
 
+    @SerializedName("role")
+    val role: String? = null,
+
     @SerializedName("error")
     val error: String? = null
-
-
 )
 

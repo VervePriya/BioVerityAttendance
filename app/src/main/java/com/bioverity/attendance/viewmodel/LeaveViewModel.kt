@@ -1,7 +1,9 @@
 
 package com.bioverity.attendance.viewmodel
 
+import android.content.Context
 import android.net.Uri
+import android.provider.OpenableColumns
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -15,12 +17,18 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.asRequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
+
+import java.io.File
 
 class LeaveViewModel : ViewModel() {
 
-    // ====================================================
-    // LEAVE APPLICATIONS
-    // ====================================================
+    // ---------------------------------------------------------
+    // EMPLOYEE LEAVE LIST
+    // ---------------------------------------------------------
 
     private val _leaveApplications =
         MutableStateFlow<List<LeaveApplication>>(emptyList())
@@ -29,9 +37,20 @@ class LeaveViewModel : ViewModel() {
         _leaveApplications.asStateFlow()
 
 
-    // ====================================================
-    // LOADING STATE
-    // ====================================================
+    // ---------------------------------------------------------
+    // ADMIN / MANAGER LEAVE LIST
+    // ---------------------------------------------------------
+
+    private val _allLeaveApplications =
+        MutableStateFlow<List<LeaveApplication>>(emptyList())
+
+    val allLeaveApplications: StateFlow<List<LeaveApplication>> =
+        _allLeaveApplications.asStateFlow()
+
+
+    // ---------------------------------------------------------
+    // LOADING
+    // ---------------------------------------------------------
 
     private val _isLoading =
         MutableStateFlow(false)
@@ -40,10 +59,6 @@ class LeaveViewModel : ViewModel() {
         _isLoading.asStateFlow()
 
 
-    // ====================================================
-    // SUBMITTING STATE
-    // ====================================================
-
     private val _isSubmitting =
         MutableStateFlow(false)
 
@@ -51,9 +66,16 @@ class LeaveViewModel : ViewModel() {
         _isSubmitting.asStateFlow()
 
 
-    // ====================================================
-    // ERROR MESSAGE
-    // ====================================================
+    private val _isProcessingApproval =
+        MutableStateFlow(false)
+
+    val isProcessingApproval: StateFlow<Boolean> =
+        _isProcessingApproval.asStateFlow()
+
+
+    // ---------------------------------------------------------
+    // MESSAGES
+    // ---------------------------------------------------------
 
     private val _errorMessage =
         MutableStateFlow<String?>(null)
@@ -62,10 +84,6 @@ class LeaveViewModel : ViewModel() {
         _errorMessage.asStateFlow()
 
 
-    // ====================================================
-    // SUCCESS MESSAGE
-    // ====================================================
-
     private val _successMessage =
         MutableStateFlow<String?>(null)
 
@@ -73,49 +91,32 @@ class LeaveViewModel : ViewModel() {
         _successMessage.asStateFlow()
 
 
-    // ====================================================
-    // LOGGED-IN EMPLOYEE
-    // ====================================================
-
     private var personId: String? = null
 
 
-    // ====================================================
-    // SET PERSON ID
-    // ====================================================
+    // ---------------------------------------------------------
+    // EMPLOYEE
+    // ---------------------------------------------------------
 
-    fun setPersonId(
-        personId: String
-    ) {
-
+    fun setPersonId(personId: String) {
         this.personId = personId
     }
 
 
-    // ====================================================
-    // LOAD LEAVE APPLICATIONS
-    // ====================================================
-
     fun loadLeaveApplications() {
 
-        val currentPersonId =
-            personId
+        val currentPersonId = personId
 
         if (currentPersonId.isNullOrBlank()) {
-
             _errorMessage.value =
                 "Employee information is not available."
-
             return
         }
-
 
         viewModelScope.launch {
 
             _isLoading.value = true
-
             _errorMessage.value = null
-
 
             try {
 
@@ -123,7 +124,6 @@ class LeaveViewModel : ViewModel() {
                     ApiClient.api.getLeaveApplications(
                         currentPersonId
                     )
-
 
                 if (response.success) {
 
@@ -150,108 +150,301 @@ class LeaveViewModel : ViewModel() {
     }
 
 
-    // ====================================================
-    // SUBMIT LEAVE APPLICATION
-    // ====================================================
+    // ---------------------------------------------------------
+    // ADMIN / MANAGER
+    // LOAD ALL LEAVE APPLICATIONS
+    // ---------------------------------------------------------
+
+    fun loadAllLeaveApplications() {
+
+        viewModelScope.launch {
+
+            _isLoading.value = true
+            _errorMessage.value = null
+
+            try {
+
+                val response =
+                    ApiClient.api.getAllLeaveApplications()
+
+                if (response.success) {
+
+                    _allLeaveApplications.value =
+                        response.leaves
+
+                } else {
+
+                    _errorMessage.value =
+                        "Failed to load leave applications."
+                }
+
+            } catch (e: Exception) {
+
+                _errorMessage.value =
+                    e.message
+                        ?: "Unable to load leave applications."
+
+            } finally {
+
+                _isLoading.value = false
+            }
+        }
+    }
+
+
+    // ---------------------------------------------------------
+    // APPROVE LEAVE
+    // ---------------------------------------------------------
+
+    fun approveLeave(leaveId: String) {
+
+        if (_isProcessingApproval.value) {
+            return
+        }
+
+        viewModelScope.launch {
+
+            _isProcessingApproval.value = true
+            _errorMessage.value = null
+            _successMessage.value = null
+
+            try {
+
+                val response =
+                    ApiClient.api.approveLeave(leaveId)
+
+                if (response.success) {
+
+                    response.leave?.let { updatedLeave ->
+
+                        _allLeaveApplications.value =
+                            _allLeaveApplications.value.map { leave ->
+
+                                if (leave.id == updatedLeave.id) {
+                                    updatedLeave
+                                } else {
+                                    leave
+                                }
+                            }
+                    }
+
+                    _successMessage.value =
+                        response.message
+                            ?: "Leave application approved."
+
+                } else {
+
+                    _errorMessage.value =
+                        response.message
+                            ?: "Failed to approve leave."
+                }
+
+            } catch (e: Exception) {
+
+                _errorMessage.value =
+                    e.message
+                        ?: "Unable to approve leave."
+
+            } finally {
+
+                _isProcessingApproval.value = false
+            }
+        }
+    }
+
+
+    // ---------------------------------------------------------
+    // REJECT LEAVE
+    // ---------------------------------------------------------
+
+    fun rejectLeave(leaveId: String) {
+
+        if (_isProcessingApproval.value) {
+            return
+        }
+
+        viewModelScope.launch {
+
+            _isProcessingApproval.value = true
+            _errorMessage.value = null
+            _successMessage.value = null
+
+            try {
+
+                val response =
+                    ApiClient.api.rejectLeave(leaveId)
+
+                if (response.success) {
+
+                    response.leave?.let { updatedLeave ->
+
+                        _allLeaveApplications.value =
+                            _allLeaveApplications.value.map { leave ->
+
+                                if (leave.id == updatedLeave.id) {
+                                    updatedLeave
+                                } else {
+                                    leave
+                                }
+                            }
+                    }
+
+                    _successMessage.value =
+                        response.message
+                            ?: "Leave application rejected."
+
+                } else {
+
+                    _errorMessage.value =
+                        response.message
+                            ?: "Failed to reject leave."
+                }
+
+            } catch (e: Exception) {
+
+                _errorMessage.value =
+                    e.message
+                        ?: "Unable to reject leave."
+
+            } finally {
+
+                _isProcessingApproval.value = false
+            }
+        }
+    }
+
+
+    // ---------------------------------------------------------
+    // SUBMIT LEAVE
+    // ---------------------------------------------------------
 
     fun submitLeave(
+        context: Context,
         leaveDate: String,
         reason: String,
         fileUri: Uri?
     ) {
 
-        val currentPersonId =
-            personId
-
-
-        // ------------------------------------------------
-        // CHECK EMPLOYEE
-        // ------------------------------------------------
+        val currentPersonId = personId
 
         if (currentPersonId.isNullOrBlank()) {
-
             _errorMessage.value =
                 "Employee information is not available."
-
             return
         }
 
-
-        // ------------------------------------------------
-        // CHECK REASON
-        // ------------------------------------------------
-
-        val cleanReason =
-            reason.trim()
+        val cleanReason = reason.trim()
 
         if (cleanReason.isEmpty()) {
-
             _errorMessage.value =
                 "Please enter a reason for leave."
-
             return
         }
 
-
-        // ------------------------------------------------
-        // CLEAR PREVIOUS MESSAGES
-        // ------------------------------------------------
-
         _errorMessage.value = null
-
         _successMessage.value = null
-
-
-        // ------------------------------------------------
-        // SUBMIT
-        // ------------------------------------------------
 
         viewModelScope.launch {
 
             _isSubmitting.value = true
 
-
             try {
 
-                /*
-                 * Attachment upload will be connected
-                 * in the next step.
-                 *
-                 * For now the selected file URI is
-                 * intentionally not sent to FastAPI.
-                 */
+                var attachmentUrl: String? = null
 
-                val attachmentUrl: String? = null
+                if (fileUri != null) {
 
+                    val contentResolver =
+                        context.contentResolver
+
+                    val fileName =
+                        getFileName(
+                            context,
+                            fileUri
+                        ) ?: "attachment"
+
+                    val mimeType =
+                        contentResolver.getType(fileUri)
+                            ?: "application/octet-stream"
+
+                    val tempFile =
+                        File(
+                            context.cacheDir,
+                            fileName
+                        )
+
+                    contentResolver
+                        .openInputStream(fileUri)
+                        ?.use { input ->
+
+                            tempFile
+                                .outputStream()
+                                .use { output ->
+
+                                    input.copyTo(output)
+                                }
+
+                        }
+                        ?: throw Exception(
+                            "Unable to read selected attachment."
+                        )
+
+                    val requestBody =
+                        tempFile.asRequestBody(
+                            mimeType.toMediaTypeOrNull()
+                        )
+
+                    val multipartFile =
+                        MultipartBody.Part.createFormData(
+                            "file",
+                            fileName,
+                            requestBody
+                        )
+
+                    val personIdBody =
+                        currentPersonId.toRequestBody(
+                            "text/plain".toMediaTypeOrNull()
+                        )
+
+                    val uploadResponse =
+                        ApiClient.api.uploadLeaveAttachment(
+                            file = multipartFile,
+                            personId = personIdBody
+                        )
+
+                    if (!uploadResponse.success) {
+
+                        throw Exception(
+                            uploadResponse.message
+                                ?: "Failed to upload attachment."
+                        )
+                    }
+
+                    attachmentUrl =
+                        uploadResponse.attachmentUrl
+
+                    if (attachmentUrl.isNullOrBlank()) {
+
+                        throw Exception(
+                            "Attachment uploaded but URL was not returned."
+                        )
+                    }
+
+                    tempFile.delete()
+                }
 
                 val request =
                     LeaveApplicationRequest(
-
-                        personId =
-                            currentPersonId,
-
-                        leaveDate =
-                            leaveDate,
-
-                        reason =
-                            cleanReason,
-
-                        attachmentUrl =
-                            attachmentUrl
+                        personId = currentPersonId,
+                        leaveDate = leaveDate,
+                        reason = cleanReason,
+                        attachmentUrl = attachmentUrl
                     )
-
 
                 val response =
-                    ApiClient.api.submitLeave(
-                        request
-                    )
-
+                    ApiClient.api.submitLeave(request)
 
                 if (response.success) {
-
-                    // ------------------------------------
-                    // ADD NEW APPLICATION TO TOP OF LIST
-                    // ------------------------------------
 
                     response.leave?.let { newLeave ->
 
@@ -260,11 +453,9 @@ class LeaveViewModel : ViewModel() {
                                     _leaveApplications.value
                     }
 
-
                     _successMessage.value =
                         response.message
                             ?: "Leave application submitted successfully."
-
 
                 } else {
 
@@ -287,33 +478,74 @@ class LeaveViewModel : ViewModel() {
     }
 
 
-    // ====================================================
-    // CLEAR ERROR
-    // ====================================================
+    // ---------------------------------------------------------
+    // FILE NAME
+    // ---------------------------------------------------------
 
-    fun clearError() {
+    private fun getFileName(
+        context: Context,
+        uri: Uri
+    ): String? {
 
-        _errorMessage.value = null
+        var fileName: String? = null
+
+        context.contentResolver
+            .query(
+                uri,
+                null,
+                null,
+                null,
+                null
+            )
+            ?.use { cursor ->
+
+                val nameIndex =
+                    cursor.getColumnIndex(
+                        OpenableColumns.DISPLAY_NAME
+                    )
+
+                if (
+                    nameIndex >= 0 &&
+                    cursor.moveToFirst()
+                ) {
+
+                    fileName =
+                        cursor.getString(nameIndex)
+                }
+            }
+
+        return fileName
     }
 
 
-    // ====================================================
-    // CLEAR SUCCESS MESSAGE
-    // ====================================================
+    // ---------------------------------------------------------
+    // CLEAR MESSAGES
+    // ---------------------------------------------------------
+
+    fun clearError() {
+        _errorMessage.value = null
+    }
 
     fun clearSuccessMessage() {
-
         _successMessage.value = null
     }
 
 
-    // ====================================================
-    // REFRESH
-    // ====================================================
+    // ---------------------------------------------------------
+    // REFRESH EMPLOYEE LEAVES
+    // ---------------------------------------------------------
 
     fun refresh() {
-
         loadLeaveApplications()
+    }
+
+
+    // ---------------------------------------------------------
+    // REFRESH ADMIN / MANAGER LEAVES
+    // ---------------------------------------------------------
+
+    fun refreshAllLeaves() {
+        loadAllLeaveApplications()
     }
 }
 

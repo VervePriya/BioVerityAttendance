@@ -1,4 +1,7 @@
+
 package com.bioverity.attendance.navigation
+
+import android.net.Uri
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -11,21 +14,31 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 
 import com.bioverity.attendance.data.session.AppSession
+
 import com.bioverity.attendance.ui.LoginScreen
+
 import com.bioverity.attendance.ui.screens.AttendanceScreen
 import com.bioverity.attendance.ui.screens.CalendarScreen
 import com.bioverity.attendance.ui.screens.FaceRecognitionScreen
 import com.bioverity.attendance.ui.screens.HomeScreen
+import com.bioverity.attendance.ui.screens.LeaveApprovalScreen
 import com.bioverity.attendance.ui.screens.LeaveScreen
 import com.bioverity.attendance.ui.screens.NotificationsScreen
 import com.bioverity.attendance.ui.screens.ProfileScreen
+
+import com.bioverity.attendance.ui.screens.login.ForgotPasswordScreen
+import com.bioverity.attendance.ui.screens.login.ResetPasswordScreen
+
 import com.bioverity.attendance.viewmodel.AttendanceViewModel
 import com.bioverity.attendance.viewmodel.LeaveViewModel
 import com.bioverity.attendance.viewmodel.NotificationViewModel
 
 
 @Composable
-fun AppNavigation() {
+fun AppNavigation(
+    resetUri: Uri? = null,
+    onResetUriHandled: () -> Unit = {}
+) {
 
     // ----------------------------------------------------
     // CONTEXT
@@ -35,37 +48,14 @@ fun AppNavigation() {
 
 
     // ----------------------------------------------------
-    // ATTENDANCE VIEW MODEL
+    // VIEW MODELS
     // ----------------------------------------------------
-
-    // Shared by:
-    // Home
-    // Attendance
-    // Calendar
-    // Face Recognition
 
     val attendanceViewModel: AttendanceViewModel =
         viewModel()
 
-
-    // ----------------------------------------------------
-    // NOTIFICATION VIEW MODEL
-    // ----------------------------------------------------
-
-    // Shared by:
-    // Home
-    // Notifications
-
     val notificationViewModel: NotificationViewModel =
         viewModel()
-
-
-    // ----------------------------------------------------
-    // LEAVE VIEW MODEL
-    // ----------------------------------------------------
-
-    // Used by:
-    // Leave Screen
 
     val leaveViewModel: LeaveViewModel =
         viewModel()
@@ -76,7 +66,6 @@ fun AppNavigation() {
     // ----------------------------------------------------
 
     var isLoggedIn by remember {
-
         mutableStateOf(
             AppSession.isLoggedIn(context)
         )
@@ -84,7 +73,160 @@ fun AppNavigation() {
 
 
     // ----------------------------------------------------
-    // LOAD EXISTING SESSION EMPLOYEE
+    // FORGOT PASSWORD
+    // ----------------------------------------------------
+
+    var showForgotPassword by remember {
+        mutableStateOf(false)
+    }
+
+
+    // ----------------------------------------------------
+    // PASSWORD RESET TOKEN
+    // ----------------------------------------------------
+
+    var resetAccessToken by remember {
+        mutableStateOf<String?>(null)
+    }
+
+
+    // ----------------------------------------------------
+    // HANDLE RESET PASSWORD DEEP LINK
+    // ----------------------------------------------------
+
+    LaunchedEffect(resetUri) {
+
+        val uri = resetUri
+
+        if (uri != null) {
+
+            // ------------------------------------------------
+            // FIRST TRY THE URI FRAGMENT
+            //
+            // Example:
+            //
+            // bioverity://reset-password
+            // #access_token=ABC&type=recovery
+            // ------------------------------------------------
+
+            val fragmentParameters =
+                mutableMapOf<String, String>()
+
+            val fragment =
+                uri.fragment
+
+            if (!fragment.isNullOrBlank()) {
+
+                fragment
+                    .split("&")
+                    .forEach { parameter ->
+
+                        val parts =
+                            parameter.split(
+                                "=",
+                                limit = 2
+                            )
+
+                        if (parts.size == 2) {
+
+                            val key =
+                                Uri.decode(
+                                    parts[0]
+                                )
+
+                            val value =
+                                Uri.decode(
+                                    parts[1]
+                                )
+
+                            fragmentParameters[key] =
+                                value
+                        }
+                    }
+            }
+
+
+            // ------------------------------------------------
+            // GET ACCESS TOKEN
+            // ------------------------------------------------
+
+            var accessToken =
+                fragmentParameters["access_token"]
+
+            var resetType =
+                fragmentParameters["type"]
+
+
+            // ------------------------------------------------
+            // FALLBACK:
+            // TRY NORMAL QUERY PARAMETERS TOO
+            // ------------------------------------------------
+
+            if (accessToken.isNullOrBlank()) {
+
+                accessToken =
+                    uri.getQueryParameter(
+                        "access_token"
+                    )
+            }
+
+            if (resetType.isNullOrBlank()) {
+
+                resetType =
+                    uri.getQueryParameter(
+                        "type"
+                    )
+            }
+
+
+            // ------------------------------------------------
+            // DEBUG INFORMATION
+            // ------------------------------------------------
+
+            android.util.Log.d(
+                "PasswordReset",
+                "Reset URI received: $uri"
+            )
+
+            android.util.Log.d(
+                "PasswordReset",
+                "Reset type: $resetType"
+            )
+
+            android.util.Log.d(
+                "PasswordReset",
+                "Access token received: ${!accessToken.isNullOrBlank()}"
+            )
+
+
+            // ------------------------------------------------
+            // ACCEPT RECOVERY TOKEN
+            // ------------------------------------------------
+
+            if (
+                !accessToken.isNullOrBlank() &&
+                (
+                        resetType == "recovery" ||
+                                resetType.isNullOrBlank()
+                        )
+            ) {
+
+                resetAccessToken =
+                    accessToken
+            }
+
+
+            // ------------------------------------------------
+            // URI HAS BEEN PROCESSED
+            // ------------------------------------------------
+
+            onResetUriHandled()
+        }
+    }
+
+
+    // ----------------------------------------------------
+    // LOAD EXISTING SESSION
     // ----------------------------------------------------
 
     LaunchedEffect(isLoggedIn) {
@@ -109,7 +251,7 @@ fun AppNavigation() {
 
 
     // ----------------------------------------------------
-    // MAIN SCREEN
+    // MAIN TAB
     // ----------------------------------------------------
 
     // 0 = Home
@@ -118,38 +260,86 @@ fun AppNavigation() {
     // 3 = Leave
 
     var selectedTab by remember {
-
         mutableIntStateOf(0)
     }
 
 
     // ----------------------------------------------------
-    // NOTIFICATIONS
+    // SECONDARY SCREENS
     // ----------------------------------------------------
 
     var showNotifications by remember {
-
         mutableStateOf(false)
     }
-
-
-    // ----------------------------------------------------
-    // FACE RECOGNITION
-    // ----------------------------------------------------
 
     var showFaceRecognition by remember {
+        mutableStateOf(false)
+    }
 
+    var showCalendar by remember {
+        mutableStateOf(false)
+    }
+
+    var showLeaveApproval by remember {
         mutableStateOf(false)
     }
 
 
     // ----------------------------------------------------
-    // ATTENDANCE CALENDAR
+    // PASSWORD RESET SCREEN
+    //
+    // IMPORTANT:
+    // This is checked BEFORE LOGIN.
+    // Therefore the reset screen can open even when
+    // the user is currently logged out.
     // ----------------------------------------------------
 
-    var showCalendar by remember {
+    if (!resetAccessToken.isNullOrBlank()) {
 
-        mutableStateOf(false)
+        ResetPasswordScreen(
+
+            accessToken =
+                resetAccessToken!!,
+
+            onPasswordUpdated = {
+
+                resetAccessToken = null
+
+                isLoggedIn = false
+
+                selectedTab = 0
+
+                showForgotPassword = false
+
+                showFaceRecognition = false
+
+                showNotifications = false
+
+                showCalendar = false
+
+                showLeaveApproval = false
+            }
+        )
+
+        return
+    }
+
+
+    // ----------------------------------------------------
+    // FORGOT PASSWORD SCREEN
+    // ----------------------------------------------------
+
+    if (showForgotPassword) {
+
+        ForgotPasswordScreen(
+
+            onBack = {
+
+                showForgotPassword = false
+            }
+        )
+
+        return
     }
 
 
@@ -162,16 +352,6 @@ fun AppNavigation() {
         LoginScreen(
 
             onLoginSuccess = {
-
-                // LoginViewModel has already saved:
-                //
-                // name
-                // email
-                // employee ID
-                // image URL
-                // person ID
-                //
-                // into AppSession.
 
                 attendanceViewModel.loadEmployee(
                     context
@@ -196,10 +376,51 @@ fun AppNavigation() {
                 showNotifications = false
 
                 showCalendar = false
+
+                showLeaveApproval = false
+
+                showForgotPassword = false
+            },
+
+            onForgotPassword = {
+
+                showForgotPassword = true
             }
         )
 
         return
+    }
+
+
+    // ----------------------------------------------------
+    // LEAVE APPROVAL SCREEN
+    // ----------------------------------------------------
+
+    if (showLeaveApproval) {
+
+        if (
+            !AppSession.isAdminOrManager(
+                context
+            )
+        ) {
+
+            showLeaveApproval = false
+
+        } else {
+
+            LeaveApprovalScreen(
+
+                viewModel =
+                    leaveViewModel,
+
+                onBack = {
+
+                    showLeaveApproval = false
+                }
+            )
+
+            return
+        }
     }
 
 
@@ -221,9 +442,11 @@ fun AppNavigation() {
 
         NotificationsScreen(
 
-            personId = personId,
+            personId =
+                personId,
 
-            viewModel = notificationViewModel,
+            viewModel =
+                notificationViewModel,
 
             onBack = {
 
@@ -261,7 +484,7 @@ fun AppNavigation() {
 
 
     // ----------------------------------------------------
-    // ATTENDANCE CALENDAR SCREEN
+    // CALENDAR SCREEN
     // ----------------------------------------------------
 
     if (showCalendar) {
@@ -286,7 +509,6 @@ fun AppNavigation() {
     // ----------------------------------------------------
 
     when (selectedTab) {
-
 
         // =================================================
         // HOME
@@ -357,6 +579,29 @@ fun AppNavigation() {
                 onNavigate = {
 
                     selectedTab = it
+                },
+
+                onLogout = {
+
+                    AppSession.logout(
+                        context
+                    )
+
+                    isLoggedIn = false
+
+                    selectedTab = 0
+
+                    showFaceRecognition = false
+
+                    showNotifications = false
+
+                    showCalendar = false
+
+                    showLeaveApproval = false
+
+                    showForgotPassword = false
+
+                    resetAccessToken = null
                 }
             )
         }
@@ -376,6 +621,16 @@ fun AppNavigation() {
                 onBack = {
 
                     selectedTab = 0
+                },
+
+                isAdminOrManager =
+                    AppSession.isAdminOrManager(
+                        context
+                    ),
+
+                onLeaveApproval = {
+
+                    showLeaveApproval = true
                 }
             )
         }

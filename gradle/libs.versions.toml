@@ -12,6 +12,7 @@ camera = "1.6.2"
 mlkitFace = "16.1.7"
 foundationLayout = "1.12.1"
 
+
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }

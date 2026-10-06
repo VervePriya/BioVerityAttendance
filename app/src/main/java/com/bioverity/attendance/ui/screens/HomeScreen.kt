@@ -1607,7 +1607,7 @@ private fun getGreeting(
         in 5..11 ->
             "Good Morning"
 
-        in 12..16 ->
+        in 12..15 ->
             "Good Afternoon"
 
         else ->
