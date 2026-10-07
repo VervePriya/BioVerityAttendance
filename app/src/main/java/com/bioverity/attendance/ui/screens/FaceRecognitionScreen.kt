@@ -1,4 +1,3 @@
-
 @file:Suppress("UnsafeOptInUsageError")
 
 package com.bioverity.attendance.ui.screens
@@ -10,72 +9,148 @@ import android.graphics.Rect
 import android.graphics.YuvImage
 import android.os.Handler
 import android.os.Looper
+
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+
+import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+
 import androidx.core.content.ContextCompat
+
 import androidx.lifecycle.compose.LocalLifecycleOwner
+
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.face.FaceDetection
 import com.google.mlkit.vision.face.FaceDetectorOptions
+
+import com.bioverity.attendance.viewmodel.AttendanceViewModel
+
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+
 import org.json.JSONObject
+
 import java.io.ByteArrayOutputStream
 import java.util.Locale
 import java.util.concurrent.Executors
-import com.bioverity.attendance.viewmodel.AttendanceViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
-private const val FACE_API_URL = "http://127.0.0.1:8000"
+
+private const val FACE_API_URL =
+    "http://127.0.0.1:8000"
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FaceRecognitionScreen(
+
     onBack: () -> Unit,
+
     onFaceDetected: () -> Unit,
+
     attendanceViewModel: AttendanceViewModel
+
 ) {
+
+    // ============================================================
+    // ATTENDANCE STATE
+    // ============================================================
+
     val todayAttendance by
     attendanceViewModel.todayAttendance.collectAsState()
-    val context = LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
+
+    val todayWorkPlan by
+    attendanceViewModel.todayWorkPlan.collectAsState()
+
+    val todayCheckoutNote by
+    attendanceViewModel.todayCheckoutNote.collectAsState()
+
+
+    val context =
+        LocalContext.current
+
+    val lifecycleOwner =
+        LocalLifecycleOwner.current
+
+
+    // ============================================================
+    // CAMERA PERMISSION
+    // ============================================================
 
     var hasCameraPermission by remember {
+
         mutableStateOf(
+
             ContextCompat.checkSelfPermission(
+
                 context,
+
                 Manifest.permission.CAMERA
+
             ) == PackageManager.PERMISSION_GRANTED
         )
     }
+
+
+    // ============================================================
+    // FACE STATE
+    // ============================================================
 
     var faceCount by remember {
         mutableIntStateOf(0)
     }
 
     var statusText by remember {
+
         mutableStateOf(
             "Position your face inside the camera"
         )
@@ -93,14 +168,10 @@ fun FaceRecognitionScreen(
         mutableStateOf<ByteArray?>(null)
     }
 
-    /*
-     * ================================================================
-     * RECOGNIZED EMPLOYEE DETAILS
-     * ================================================================
-     *
-     * These are stored after successful face verification.
-     * They will be used by Check In / Check Out in Step 3.
-     */
+
+    // ============================================================
+    // RECOGNIZED EMPLOYEE DETAILS
+    // ============================================================
 
     var recognizedPersonId by remember {
         mutableStateOf<String?>(null)
@@ -114,52 +185,76 @@ fun FaceRecognitionScreen(
         mutableStateOf(0.0)
     }
 
-    /*
-     * ================================================================
-     * ATTENDANCE ACTION STATE
-     * ================================================================
-     */
+
+    // ============================================================
+    // ATTENDANCE ACTION STATE
+    // ============================================================
 
     var attendanceMessage by remember {
         mutableStateOf("")
     }
 
+
+    // ============================================================
+    // CAMERA PERMISSION LAUNCHER
+    // ============================================================
+
     val permissionLauncher =
         rememberLauncherForActivityResult(
+
             ActivityResultContracts.RequestPermission()
+
         ) { granted ->
 
-            hasCameraPermission = granted
+            hasCameraPermission =
+                granted
 
             if (!granted) {
+
                 statusText =
                     "Camera permission is required"
             }
         }
 
+
+    // ============================================================
+    // REQUEST CAMERA PERMISSION
+    // ============================================================
+
     LaunchedEffect(Unit) {
+
         if (!hasCameraPermission) {
+
             permissionLauncher.launch(
                 Manifest.permission.CAMERA
             )
         }
     }
 
-    val cameraExecutor = remember {
-        Executors.newSingleThreadExecutor()
-    }
+
+    // ============================================================
+    // CAMERA EXECUTOR
+    // ============================================================
+
+    val cameraExecutor =
+        remember {
+
+            Executors.newSingleThreadExecutor()
+        }
+
 
     DisposableEffect(Unit) {
+
         onDispose {
+
             cameraExecutor.shutdown()
         }
     }
 
-    /*
-     * ================================================================
-     * FACE VERIFICATION
-     * ================================================================
-     */
+
+    // ============================================================
+    // FACE VERIFICATION
+    // ============================================================
 
     fun verifyEmployee() {
 
@@ -167,7 +262,8 @@ fun FaceRecognitionScreen(
             return
         }
 
-        val jpegBytes = latestJpeg
+        val jpegBytes =
+            latestJpeg
 
         if (jpegBytes == null) {
 
@@ -180,6 +276,7 @@ fun FaceRecognitionScreen(
         if (faceCount != 1) {
 
             resultText =
+
                 when {
 
                     faceCount == 0 ->
@@ -195,17 +292,24 @@ fun FaceRecognitionScreen(
             return
         }
 
-        isVerifying = true
+        isVerifying =
+            true
 
-        resultText = "Verifying..."
+        resultText =
+            "Verifying..."
 
-        /*
-         * Clear any previous attendance state
-         */
-        recognizedPersonId = null
-        recognizedPersonName = null
-        recognizedConfidence = 0.0
-        attendanceMessage = ""
+        recognizedPersonId =
+            null
+
+        recognizedPersonName =
+            null
+
+        recognizedConfidence =
+            0.0
+
+        attendanceMessage =
+            ""
+
 
         Thread {
 
@@ -214,63 +318,88 @@ fun FaceRecognitionScreen(
                 val client =
                     OkHttpClient()
 
+
                 val imageBody =
                     jpegBytes.toRequestBody(
                         "image/jpeg".toMediaType()
                     )
 
+
                 val multipartBody =
                     MultipartBody.Builder()
+
                         .setType(
                             MultipartBody.FORM
                         )
+
                         .addFormDataPart(
+
                             "image",
+
                             "face.jpg",
+
                             imageBody
                         )
+
                         .build()
+
 
                 val request =
                     Request.Builder()
+
                         .url(
                             "$FACE_API_URL/recognize-face"
                         )
-                        .post(multipartBody)
+
+                        .post(
+                            multipartBody
+                        )
+
                         .build()
+
 
                 println(
                     "FACE_API: Sending image to " +
                             "$FACE_API_URL/recognize-face"
                 )
 
+
                 client
                     .newCall(request)
                     .execute()
                     .use { response ->
 
+
                         val responseText =
                             response.body.string()
+
 
                         println(
                             "FACE_API: HTTP ${response.code}"
                         )
+
 
                         println(
                             "FACE_API: Response = " +
                                     responseText
                         )
 
+
                         if (!response.isSuccessful) {
 
                             throw Exception(
+
                                 "HTTP ${response.code}: " +
                                         responseText
                             )
                         }
 
+
                         val json =
-                            JSONObject(responseText)
+                            JSONObject(
+                                responseText
+                            )
+
 
                         val recognized =
                             json.optBoolean(
@@ -278,17 +407,17 @@ fun FaceRecognitionScreen(
                                 false
                             )
 
+
                         val reason =
                             json.optString(
                                 "reason",
                                 "unknown"
                             )
 
-                        /*
-                         * ====================================================
-                         * RECOGNIZED
-                         * ====================================================
-                         */
+
+                        // ==================================================
+                        // RECOGNIZED
+                        // ==================================================
 
                         if (recognized) {
 
@@ -298,11 +427,13 @@ fun FaceRecognitionScreen(
                                     ""
                                 )
 
+
                             val name =
                                 json.optString(
                                     "name",
                                     "Unknown"
                                 )
+
 
                             val confidence =
                                 json.optDouble(
@@ -310,23 +441,26 @@ fun FaceRecognitionScreen(
                                     0.0
                                 )
 
+
                             Handler(
                                 Looper.getMainLooper()
                             ).post {
 
-                                /*
-                                 * Store recognized employee.
-                                 */
+
                                 recognizedPersonId =
                                     personId
+
 
                                 recognizedPersonName =
                                     name
 
+
                                 recognizedConfidence =
                                     confidence
 
+
                                 resultText =
+
                                     "✓ Verified\n\n" +
                                             "Employee: $name\n" +
                                             "Confidence: ${
@@ -337,22 +471,27 @@ fun FaceRecognitionScreen(
                                                 )
                                             }"
 
-                                attendanceMessage = ""
 
-                                isVerifying = false
+                                attendanceMessage =
+                                    ""
+
+
+                                isVerifying =
+                                    false
+
 
                                 onFaceDetected()
                             }
                         }
 
-                        /*
-                         * ====================================================
-                         * BELOW THRESHOLD
-                         * ====================================================
-                         */
+
+                        // ==================================================
+                        // BELOW THRESHOLD
+                        // ==================================================
 
                         else if (
-                            reason == "below_threshold"
+                            reason ==
+                            "below_threshold"
                         ) {
 
                             val bestMatchName =
@@ -361,20 +500,26 @@ fun FaceRecognitionScreen(
                                     "Unknown"
                                 )
 
+
                             val bestMatchScore =
                                 json.optDouble(
+
                                     "best_match_score",
+
                                     json.optDouble(
                                         "confidence",
                                         0.0
                                     )
                                 )
 
+
                             Handler(
                                 Looper.getMainLooper()
                             ).post {
 
+
                                 resultText =
+
                                     "⚠ Not verified\n\n" +
                                             "Best match: " +
                                             bestMatchName +
@@ -388,24 +533,28 @@ fun FaceRecognitionScreen(
                                             }\n\n" +
                                             "Below recognition threshold"
 
-                                /*
-                                 * Do not allow attendance actions
-                                 * for an unverified person.
-                                 */
-                                recognizedPersonId = null
-                                recognizedPersonName = null
-                                recognizedConfidence = 0.0
-                                attendanceMessage = ""
 
-                                isVerifying = false
+                                recognizedPersonId =
+                                    null
+
+                                recognizedPersonName =
+                                    null
+
+                                recognizedConfidence =
+                                    0.0
+
+                                attendanceMessage =
+                                    ""
+
+                                isVerifying =
+                                    false
                             }
                         }
 
-                        /*
-                         * ====================================================
-                         * OTHER FACE ERRORS
-                         * ====================================================
-                         */
+
+                        // ==================================================
+                        // OTHER FACE ERRORS
+                        // ==================================================
 
                         else {
 
@@ -413,7 +562,9 @@ fun FaceRecognitionScreen(
                                 Looper.getMainLooper()
                             ).post {
 
+
                                 resultText =
+
                                     when (reason) {
 
                                         "no_face" ->
@@ -439,12 +590,21 @@ fun FaceRecognitionScreen(
                                                     "Reason: $reason"
                                     }
 
-                                recognizedPersonId = null
-                                recognizedPersonName = null
-                                recognizedConfidence = 0.0
-                                attendanceMessage = ""
 
-                                isVerifying = false
+                                recognizedPersonId =
+                                    null
+
+                                recognizedPersonName =
+                                    null
+
+                                recognizedConfidence =
+                                    0.0
+
+                                attendanceMessage =
+                                    ""
+
+                                isVerifying =
+                                    false
                             }
                         }
                     }
@@ -455,46 +615,85 @@ fun FaceRecognitionScreen(
                     "FACE_API ERROR: ${e.message}"
                 )
 
+
                 Handler(
                     Looper.getMainLooper()
                 ).post {
+
 
                     resultText =
                         "Recognition failed:\n" +
                                 "${e.message}"
 
-                    recognizedPersonId = null
-                    recognizedPersonName = null
-                    recognizedConfidence = 0.0
-                    attendanceMessage = ""
 
-                    isVerifying = false
+                    recognizedPersonId =
+                        null
+
+                    recognizedPersonName =
+                        null
+
+                    recognizedConfidence =
+                        0.0
+
+                    attendanceMessage =
+                        ""
+
+                    isVerifying =
+                        false
                 }
             }
 
         }.start()
     }
 
-    fun saveAttendance(attendanceType: String) {
 
-        val personId = recognizedPersonId
-        val personName = recognizedPersonName
+    // ============================================================
+    // SAVE ATTENDANCE
+    // ============================================================
 
-        if (personId.isNullOrBlank() || personName.isNullOrBlank()) {
+    fun saveAttendance(
+        attendanceType: String
+    ) {
 
-            attendanceMessage = "Employee is not verified"
+        val personId =
+            recognizedPersonId
+
+        val personName =
+            recognizedPersonName
+
+
+        if (
+            personId.isNullOrBlank() ||
+            personName.isNullOrBlank()
+        ) {
+
+            attendanceMessage =
+                "Employee is not verified"
 
             return
         }
 
+
         attendanceMessage =
-            "Saving ${attendanceType.replace("_", " ")}..."
+            "Saving ${
+                attendanceType.replace(
+                    "_",
+                    " "
+                )
+            }..."
+
 
         Thread {
 
             try {
 
-                val client = OkHttpClient()
+                val client =
+                    OkHttpClient()
+
+
+                // ========================================================
+                // ATTENDANCE REQUEST JSON
+                // ========================================================
 
                 val jsonBody =
                     JSONObject().apply {
@@ -513,52 +712,114 @@ fun FaceRecognitionScreen(
                             "attendance_type",
                             attendanceType
                         )
+
+
+                        // ==================================================
+                        // NOTE
+                        //
+                        // CHECK_IN:
+                        //     Today's Work Plan
+                        //
+                        // CHECK_OUT:
+                        //     Today's Work Note
+                        // ==================================================
+
+                        val note =
+                            if (
+                                attendanceType ==
+                                "CHECK_IN"
+                            ) {
+
+                                todayWorkPlan.trim()
+
+                            } else {
+
+                                todayCheckoutNote.trim()
+                            }
+
+
+                        if (note.isNotBlank()) {
+
+                            put(
+                                "note",
+                                note
+                            )
+                        }
                     }
+
+
+                println(
+                    "ATTENDANCE_API: Request = " +
+                            jsonBody.toString()
+                )
+
 
                 val requestBody =
                     jsonBody
                         .toString()
                         .toRequestBody(
-                            "application/json".toMediaType()
+
+                            "application/json"
+                                .toMediaType()
                         )
+
 
                 val request =
                     Request.Builder()
+
                         .url(
                             "$FACE_API_URL/attendance"
                         )
-                        .post(requestBody)
+
+                        .post(
+                            requestBody
+                        )
+
                         .build()
 
+
                 println(
-                    "ATTENDANCE_API: Sending $attendanceType"
+                    "ATTENDANCE_API: Sending " +
+                            attendanceType
                 )
+
 
                 client
                     .newCall(request)
                     .execute()
                     .use { response ->
 
+
                         val responseText =
                             response.body.string()
+
 
                         println(
                             "ATTENDANCE_API: HTTP ${response.code}"
                         )
 
+
                         println(
-                            "ATTENDANCE_API: Response = $responseText"
+                            "ATTENDANCE_API: Response = " +
+                                    responseText
                         )
+
 
                         if (!response.isSuccessful) {
 
                             throw Exception(
-                                "HTTP ${response.code}: $responseText"
+
+                                "HTTP ${response.code}: " +
+                                        responseText
                             )
                         }
 
+
                         val json =
-                            JSONObject(responseText)
+                            JSONObject(
+                                responseText
+                            )
+
 
                         val success =
                             json.optBoolean(
@@ -566,53 +827,97 @@ fun FaceRecognitionScreen(
                                 false
                             )
 
+
                         val message =
                             json.optString(
                                 "message",
                                 ""
                             )
 
+
                         Handler(
                             Looper.getMainLooper()
                         ).post {
 
+
                             if (success) {
 
-                                /*
-                                 * ==================================================
-                                 * IMPORTANT
-                                 *
-                                 * Update the SAME AttendanceViewModel that the
-                                 * Attendance screen is observing.
-                                 * ==================================================
-                                 */
-                                attendanceViewModel.markAttendance()
+
+                                // ==================================================
+                                // UPDATE ATTENDANCE VIEW MODEL
+                                // ==================================================
+
+                                attendanceViewModel
+                                    .markAttendance()
+
+
+                                // ==================================================
+                                // CLEAR SAVED NOTE
+                                // ==================================================
+
+                                if (
+                                    attendanceType ==
+                                    "CHECK_IN"
+                                ) {
+
+                                    attendanceViewModel
+                                        .clearTodayWorkPlan()
+
+                                } else {
+
+                                    attendanceViewModel
+                                        .clearTodayCheckoutNote()
+                                }
+
 
                                 attendanceMessage =
-                                    if (message.isNotBlank()) {
+
+                                    if (
+                                        message.isNotBlank()
+                                    ) {
+
                                         "✓ $message"
+
                                     } else {
-                                        "✓ ${attendanceType.replace("_", " ")} successful"
+
+                                        "✓ ${
+                                            attendanceType.replace(
+                                                "_",
+                                                " "
+                                            )
+                                        } successful"
                                     }
 
-                                /*
-                                 * Clear recognition state so the next visit
-                                 * requires a fresh face verification.
-                                 */
-                                recognizedPersonId = null
-                                recognizedPersonName = null
-                                recognizedConfidence = 0.0
+
+                                // ==================================================
+                                // CLEAR RECOGNIZED EMPLOYEE
+                                // ==================================================
+
+                                recognizedPersonId =
+                                    null
+
+                                recognizedPersonName =
+                                    null
+
+                                recognizedConfidence =
+                                    0.0
 
                             } else {
 
+
                                 val reason =
                                     json.optString(
+
                                         "reason",
+
                                         "Unknown error"
                                     )
 
+
                                 attendanceMessage =
-                                    "Attendance failed:\n$reason"
+
+                                    "Attendance failed:\n" +
+                                            reason
                             }
                         }
                     }
@@ -620,20 +925,29 @@ fun FaceRecognitionScreen(
             } catch (e: Exception) {
 
                 println(
-                    "ATTENDANCE_API ERROR: ${e.message}"
+                    "ATTENDANCE_API ERROR: " +
+                            e.message
                 )
+
 
                 Handler(
                     Looper.getMainLooper()
                 ).post {
 
+
                     attendanceMessage =
-                        "Attendance failed:\n${e.message}"
+                        "Attendance failed:\n" +
+                                e.message
                 }
             }
 
         }.start()
     }
+
+
+    // ============================================================
+    // UI
+    // ============================================================
 
     Scaffold(
 
@@ -642,7 +956,9 @@ fun FaceRecognitionScreen(
             TopAppBar(
 
                 title = {
-                    Text("Face Verification")
+                    Text(
+                        "Face Verification"
+                    )
                 },
 
                 navigationIcon = {
@@ -652,8 +968,10 @@ fun FaceRecognitionScreen(
                     ) {
 
                         Icon(
+
                             imageVector =
-                                Icons.AutoMirrored.Filled.ArrowBack,
+                                Icons.AutoMirrored
+                                    .Filled.ArrowBack,
 
                             contentDescription =
                                 "Back"
@@ -665,14 +983,18 @@ fun FaceRecognitionScreen(
 
     ) { paddingValues ->
 
+
         if (!hasCameraPermission) {
+
 
             Column(
 
                 modifier =
                     Modifier
                         .fillMaxSize()
-                        .padding(paddingValues),
+                        .padding(
+                            paddingValues
+                        ),
 
                 horizontalAlignment =
                     Alignment.CenterHorizontally,
@@ -681,45 +1003,54 @@ fun FaceRecognitionScreen(
                     Arrangement.Center
             ) {
 
+
                 Text(
                     "Camera permission is required"
                 )
+
 
                 Spacer(
                     modifier =
                         Modifier.height(16.dp)
                 )
 
+
                 Button(
 
                     onClick = {
 
-                        permissionLauncher.launch(
-                            Manifest.permission.CAMERA
-                        )
+                        permissionLauncher
+                            .launch(
+                                Manifest.permission.CAMERA
+                            )
                     }
 
                 ) {
 
-                    Text("Allow Camera")
+                    Text(
+                        "Allow Camera"
+                    )
                 }
             }
 
+
         } else {
+
 
             Column(
 
                 modifier =
                     Modifier
                         .fillMaxSize()
-                        .padding(paddingValues)
+                        .padding(
+                            paddingValues
+                        )
             ) {
 
-                /*
-                 * ============================================================
-                 * CAMERA
-                 * ============================================================
-                 */
+
+                // ============================================================
+                // CAMERA
+                // ============================================================
 
                 Box(
 
@@ -729,6 +1060,7 @@ fun FaceRecognitionScreen(
                             .weight(1f)
                 ) {
 
+
                     AndroidView(
 
                         modifier =
@@ -736,24 +1068,30 @@ fun FaceRecognitionScreen(
 
                         factory = { ctx ->
 
+
                             val previewView =
                                 PreviewView(ctx)
+
 
                             val cameraProviderFuture =
                                 ProcessCameraProvider
                                     .getInstance(ctx)
+
 
                             cameraProviderFuture
                                 .addListener(
 
                                     {
 
+
                                         val cameraProvider =
                                             cameraProviderFuture
                                                 .get()
 
+
                                         val preview =
-                                            Preview.Builder()
+                                            Preview
+                                                .Builder()
                                                 .build()
                                                 .also {
 
@@ -761,6 +1099,7 @@ fun FaceRecognitionScreen(
                                                         previewView
                                                             .surfaceProvider
                                                 }
+
 
                                         val faceDetector =
                                             FaceDetection
@@ -770,16 +1109,19 @@ fun FaceRecognitionScreen(
                                                         .Builder()
 
                                                         .setPerformanceMode(
+
                                                             FaceDetectorOptions
                                                                 .PERFORMANCE_MODE_FAST
                                                         )
 
                                                         .setLandmarkMode(
+
                                                             FaceDetectorOptions
                                                                 .LANDMARK_MODE_NONE
                                                         )
 
                                                         .setClassificationMode(
+
                                                             FaceDetectorOptions
                                                                 .CLASSIFICATION_MODE_NONE
                                                         )
@@ -787,48 +1129,63 @@ fun FaceRecognitionScreen(
                                                         .build()
                                                 )
 
+
                                         val imageAnalyzer =
-                                            ImageAnalysis.Builder()
+                                            ImageAnalysis
+                                                .Builder()
 
                                                 .setBackpressureStrategy(
+
                                                     ImageAnalysis
                                                         .STRATEGY_KEEP_ONLY_LATEST
                                                 )
 
                                                 .build()
 
-                                        imageAnalyzer.setAnalyzer(
 
-                                            cameraExecutor
+                                        imageAnalyzer
+                                            .setAnalyzer(
 
-                                        ) { imageProxy ->
+                                                cameraExecutor
 
-                                            processCameraFrame(
+                                            ) { imageProxy ->
 
-                                                imageProxy =
-                                                    imageProxy,
 
-                                                faceDetector =
-                                                    faceDetector,
+                                                processCameraFrame(
 
-                                                onFaceCount = {
-                                                    faceCount = it
-                                                },
+                                                    imageProxy =
+                                                        imageProxy,
 
-                                                onJpegAvailable = {
-                                                    latestJpeg = it
-                                                },
+                                                    faceDetector =
+                                                        faceDetector,
 
-                                                onStatus = {
-                                                    statusText = it
-                                                }
-                                            )
-                                        }
+                                                    onFaceCount = {
+
+                                                        faceCount =
+                                                            it
+                                                    },
+
+                                                    onJpegAvailable = {
+
+                                                        latestJpeg =
+                                                            it
+                                                    },
+
+                                                    onStatus = {
+
+                                                        statusText =
+                                                            it
+                                                    }
+                                                )
+                                            }
+
 
                                         try {
 
+
                                             cameraProvider
                                                 .unbindAll()
+
 
                                             cameraProvider
                                                 .bindToLifecycle(
@@ -843,9 +1200,12 @@ fun FaceRecognitionScreen(
                                                     imageAnalyzer
                                                 )
 
+
                                         } catch (e: Exception) {
 
+
                                             println(
+
                                                 "CAMERA ERROR: " +
                                                         e.message
                                             )
@@ -857,15 +1217,15 @@ fun FaceRecognitionScreen(
                                         .getMainExecutor(ctx)
                                 )
 
+
                             previewView
                         }
                     )
 
-                    /*
-                     * ========================================================
-                     * FACE STATUS
-                     * ========================================================
-                     */
+
+                    // ========================================================
+                    // FACE STATUS
+                    // ========================================================
 
                     Box(
 
@@ -876,31 +1236,39 @@ fun FaceRecognitionScreen(
                                 )
                                 .padding(16.dp)
                                 .background(
+
                                     Color.Black.copy(
                                         alpha = 0.65f
                                     ),
+
                                     RoundedCornerShape(
                                         12.dp
                                     )
                                 )
                                 .padding(
+
                                     horizontal = 16.dp,
+
                                     vertical = 10.dp
                                 )
                     ) {
 
+
                         Text(
-                            text = statusText,
-                            color = Color.White
+
+                            text =
+                                statusText,
+
+                            color =
+                                Color.White
                         )
                     }
                 }
 
-                /*
-                 * ============================================================
-                 * RESULT + ATTENDANCE ACTIONS
-                 * ============================================================
-                 */
+
+                // ============================================================
+                // RESULT + ATTENDANCE ACTIONS
+                // ============================================================
 
                 Column(
 
@@ -913,17 +1281,20 @@ fun FaceRecognitionScreen(
                         Alignment.CenterHorizontally
                 ) {
 
-                    /*
-                     * ========================================================
-                     * RECOGNITION RESULT
-                     * ========================================================
-                     */
 
-                    if (resultText.isNotEmpty()) {
+                    // ========================================================
+                    // RECOGNITION RESULT
+                    // ========================================================
+
+                    if (
+                        resultText.isNotEmpty()
+                    ) {
+
 
                         Text(
 
-                            text = resultText,
+                            text =
+                                resultText,
 
                             style =
                                 MaterialTheme
@@ -931,51 +1302,117 @@ fun FaceRecognitionScreen(
                                     .titleMedium
                         )
 
+
                         Spacer(
                             modifier =
                                 Modifier.height(16.dp)
                         )
                     }
 
-                    /*
-                     * ========================================================
-                     * CHECK IN / CHECK OUT
-                     * ========================================================
-                     *
-                     * These buttons are intentionally UI-only for now.
-                     * Step 3 will connect them to the Python API.
-                     */
+
+                    // ========================================================
+                    // VERIFIED EMPLOYEE
+                    // ========================================================
+
                     if (
                         recognizedPersonId != null &&
                         recognizedPersonName != null
                     ) {
 
+
                         Text(
-                            text = "Attendance for $recognizedPersonName",
-                            style = MaterialTheme.typography.titleMedium
+
+                            text =
+                                "Attendance for " +
+                                        recognizedPersonName,
+
+                            style =
+                                MaterialTheme
+                                    .typography
+                                    .titleMedium
                         )
 
+
                         Spacer(
-                            modifier = Modifier.height(12.dp)
+                            modifier =
+                                Modifier.height(12.dp)
                         )
+
 
                         when {
 
-                            /*
-                             * ============================================================
-                             * NO CHECK IN YET
-                             * ============================================================
-                             */
+
+                            // =================================================
+                            // CHECK IN
+                            // =================================================
+
                             todayAttendance.checkIn == null -> {
+
+
+                                if (
+                                    todayWorkPlan
+                                        .isNotBlank()
+                                ) {
+
+
+                                    Text(
+
+                                        text =
+                                            "Today's Work Plan",
+
+                                        style =
+                                            MaterialTheme
+                                                .typography
+                                                .labelLarge,
+
+                                        color =
+                                            MaterialTheme
+                                                .colorScheme
+                                                .primary
+                                    )
+
+
+                                    Spacer(
+                                        modifier =
+                                            Modifier.height(4.dp)
+                                    )
+
+
+                                    Text(
+
+                                        text =
+                                            todayWorkPlan,
+
+                                        style =
+                                            MaterialTheme
+                                                .typography
+                                                .bodyMedium
+                                    )
+
+
+                                    Spacer(
+                                        modifier =
+                                            Modifier.height(12.dp)
+                                    )
+                                }
+
 
                                 Button(
 
                                     onClick = {
-                                        saveAttendance("CHECK_IN")
+
+                                        saveAttendance(
+                                            "CHECK_IN"
+                                        )
                                     },
 
-                                    enabled = attendanceMessage.isEmpty() ||
-                                            !attendanceMessage.contains("Saving"),
+                                    enabled =
+                                        attendanceMessage
+                                            .isEmpty() ||
+                                                !attendanceMessage
+                                                    .contains(
+                                                        "Saving"
+                                                    ),
 
                                     modifier =
                                         Modifier
@@ -984,36 +1421,105 @@ fun FaceRecognitionScreen(
 
                                 ) {
 
-                                    Text("Check In")
+
+                                    Text(
+                                        "Check In"
+                                    )
                                 }
                             }
 
-                            /*
-                             * ============================================================
-                             * CHECK IN EXISTS, CHECK OUT NOT YET DONE
-                             * ============================================================
-                             */
-                            todayAttendance.checkOut == null -> {
+
+                            // =================================================
+                            // CHECK OUT
+                            // =================================================
+
+                            todayAttendance
+                                .checkOut == null -> {
+
 
                                 Text(
+
                                     text =
-                                        "Checked in at ${todayAttendance.checkIn}",
+                                        "Checked in at " +
+                                                todayAttendance
+                                                    .checkIn,
+
                                     style =
-                                        MaterialTheme.typography.bodyLarge
+                                        MaterialTheme
+                                            .typography
+                                            .bodyLarge
                                 )
 
+
                                 Spacer(
-                                    modifier = Modifier.height(12.dp)
+                                    modifier =
+                                        Modifier.height(16.dp)
                                 )
+
+
+                                // =================================================
+                                // TODAY'S WORK NOTE
+                                // =================================================
+
+                                OutlinedTextField(
+
+                                    value =
+                                        todayCheckoutNote,
+
+                                    onValueChange = {
+
+                                        attendanceViewModel
+                                            .setTodayCheckoutNote(
+                                                it
+                                            )
+                                    },
+
+                                    modifier =
+                                        Modifier
+                                            .fillMaxWidth(),
+
+                                    label = {
+
+                                        Text(
+                                            "Today's Work Note (Optional)"
+                                        )
+                                    },
+
+                                    placeholder = {
+
+                                        Text(
+                                            "Enter a note about today's completed work"
+                                        )
+                                    },
+
+                                    minLines = 3,
+
+                                    maxLines = 5
+                                )
+
+
+                                Spacer(
+                                    modifier =
+                                        Modifier.height(12.dp)
+                                )
+
 
                                 OutlinedButton(
 
                                     onClick = {
-                                        saveAttendance("CHECK_OUT")
+
+                                        saveAttendance(
+                                            "CHECK_OUT"
+                                        )
                                     },
 
-                                    enabled = attendanceMessage.isEmpty() ||
-                                            !attendanceMessage.contains("Saving"),
+                                    enabled =
+                                        attendanceMessage
+                                            .isEmpty() ||
+                                                !attendanceMessage
+                                                    .contains(
+                                                        "Saving"
+                                                    ),
 
                                     modifier =
                                         Modifier
@@ -1022,62 +1528,108 @@ fun FaceRecognitionScreen(
 
                                 ) {
 
-                                    Text("Check Out")
+
+                                    Text(
+                                        "Check Out"
+                                    )
                                 }
                             }
 
-                            /*
-                             * ============================================================
-                             * BOTH COMPLETED
-                             * ============================================================
-                             */
+
+                            // =================================================
+                            // COMPLETED
+                            // =================================================
+
                             else -> {
 
+
                                 Text(
-                                    text = "Today's attendance completed",
+
+                                    text =
+                                        "Today's attendance completed",
+
                                     style =
-                                        MaterialTheme.typography.titleMedium
+                                        MaterialTheme
+                                            .typography
+                                            .titleMedium
                                 )
+
 
                                 Spacer(
-                                    modifier = Modifier.height(8.dp)
+                                    modifier =
+                                        Modifier.height(8.dp)
                                 )
 
-                                Text(
-                                    text =
-                                        "Check In: ${todayAttendance.checkIn}"
-                                )
 
                                 Text(
+
                                     text =
-                                        "Check Out: ${todayAttendance.checkOut}"
+                                        "Check In: " +
+                                                todayAttendance
+                                                    .checkIn
                                 )
 
+
                                 Text(
+
                                     text =
-                                        "Hours: ${todayAttendance.workingHours}"
+                                        "Check Out: " +
+                                                todayAttendance
+                                                    .checkOut
+                                )
+
+
+                                Text(
+
+                                    text =
+                                        "Hours: " +
+                                                todayAttendance
+                                                    .workingHours
                                 )
                             }
                         }
 
-                        if (attendanceMessage.isNotEmpty()) {
+
+                        // ========================================================
+                        // ATTENDANCE MESSAGE
+                        // ========================================================
+
+                        if (
+                            attendanceMessage
+                                .isNotEmpty()
+                        ) {
+
 
                             Spacer(
-                                modifier = Modifier.height(12.dp)
+                                modifier =
+                                    Modifier.height(12.dp)
                             )
 
+
                             Text(
-                                text = attendanceMessage,
+
+                                text =
+                                    attendanceMessage,
+
                                 style =
-                                    MaterialTheme.typography.bodyMedium
+                                    MaterialTheme
+                                        .typography
+                                        .bodyMedium
                             )
                         }
 
+
                     } else {
+
+
+                        // ========================================================
+                        // VERIFY EMPLOYEE BUTTON
+                        // ========================================================
 
                         Button(
 
                             onClick = {
+
                                 verifyEmployee()
                             },
 
@@ -1092,7 +1644,9 @@ fun FaceRecognitionScreen(
 
                         ) {
 
+
                             Text(
+
                                 if (isVerifying)
                                     "Verifying..."
                                 else
@@ -1100,24 +1654,11 @@ fun FaceRecognitionScreen(
                             )
                         }
                     }
-
-
-
-
-
-
-
-
-
-
-
-
-                    }
                 }
             }
         }
     }
-
+}
 
 
 /* ========================================================================
@@ -1142,6 +1683,7 @@ private fun processCameraFrame(
     val mediaImage =
         imageProxy.image
 
+
     if (mediaImage == null) {
 
         imageProxy.close()
@@ -1149,20 +1691,28 @@ private fun processCameraFrame(
         return
     }
 
+
     val rotationDegrees =
         imageProxy.imageInfo.rotationDegrees
 
+
     val inputImage =
         InputImage.fromMediaImage(
+
             mediaImage,
+
             rotationDegrees
         )
 
+
     val jpegBytes =
         imageProxyToJpeg(
+
             imageProxy,
+
             rotationDegrees
         )
+
 
     if (jpegBytes != null) {
 
@@ -1171,17 +1721,23 @@ private fun processCameraFrame(
         )
     }
 
+
     faceDetector
 
-        .process(inputImage)
+        .process(
+            inputImage
+        )
 
         .addOnSuccessListener { faces ->
+
 
             onFaceCount(
                 faces.size
             )
 
+
             when {
+
 
                 faces.isEmpty() ->
 
@@ -1189,11 +1745,13 @@ private fun processCameraFrame(
                         "No face detected"
                     )
 
+
                 faces.size > 1 ->
 
                     onStatus(
                         "Multiple faces detected"
                     )
+
 
                 else ->
 
@@ -1205,13 +1763,16 @@ private fun processCameraFrame(
 
         .addOnFailureListener { e ->
 
+
             onStatus(
+
                 "Face detection error: " +
                         e.message
             )
         }
 
         .addOnCompleteListener {
+
 
             imageProxy.close()
         }
@@ -1230,7 +1791,9 @@ private fun imageProxyToJpeg(
 
 ): ByteArray? {
 
+
     return try {
+
 
         if (
             imageProxy.format !=
@@ -1240,62 +1803,85 @@ private fun imageProxyToJpeg(
             return null
         }
 
+
         val image =
             imageProxy.image
                 ?: return null
 
+
         val yBuffer =
             image.planes[0].buffer
+
 
         val uBuffer =
             image.planes[1].buffer
 
+
         val vBuffer =
             image.planes[2].buffer
+
 
         val ySize =
             yBuffer.remaining()
 
+
         val uSize =
             uBuffer.remaining()
+
 
         val vSize =
             vBuffer.remaining()
 
+
         val nv21 =
             ByteArray(
-                ySize + uSize + vSize
+                ySize +
+                        uSize +
+                        vSize
             )
 
+
         yBuffer.get(
+
             nv21,
+
             0,
+
             ySize
         )
+
 
         val uBytes =
             ByteArray(uSize)
 
+
         val vBytes =
             ByteArray(vSize)
+
 
         uBuffer.get(
             uBytes
         )
 
+
         vBuffer.get(
             vBytes
         )
 
+
         var position =
             ySize
 
+
         var i = 0
+
 
         while (i < vSize) {
 
+
             nv21[position++] =
                 vBytes[i]
+
 
             if (i < uSize) {
 
@@ -1303,8 +1889,10 @@ private fun imageProxyToJpeg(
                     uBytes[i]
             }
 
+
             i++
         }
+
 
         val yuvImage =
             YuvImage(
@@ -1320,15 +1908,21 @@ private fun imageProxyToJpeg(
                 null
             )
 
+
         val outputStream =
             ByteArrayOutputStream()
+
 
         yuvImage.compressToJpeg(
 
             Rect(
+
                 0,
+
                 0,
+
                 image.width,
+
                 image.height
             ),
 
@@ -1337,16 +1931,20 @@ private fun imageProxyToJpeg(
             outputStream
         )
 
+
         outputStream.toByteArray()
+
 
     } catch (e: Exception) {
 
+
         println(
+
             "JPEG conversion error: " +
                     e.message
         )
 
+
         null
     }
 }
-

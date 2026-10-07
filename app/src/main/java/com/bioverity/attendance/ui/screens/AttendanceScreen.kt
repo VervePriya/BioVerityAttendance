@@ -1,4 +1,3 @@
-
 package com.bioverity.attendance.ui.screens
 
 import androidx.compose.foundation.background
@@ -16,6 +15,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
@@ -30,6 +30,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -40,8 +41,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.dp
 import com.bioverity.attendance.data.model.AttendanceRecord
 import com.bioverity.attendance.ui.components.BottomNavigationBar
 import com.bioverity.attendance.ui.theme.Background
@@ -69,28 +71,52 @@ fun AttendanceScreen(
     viewModel.monthlyAttendance.collectAsState()
 
     // ============================================================
+    // TODAY'S WORK PLAN
+    //
+    // Stored in AttendanceViewModel so it can also be accessed
+    // from FaceRecognitionScreen.
+    // ============================================================
+
+    val todayWorkPlan by
+    viewModel.todayWorkPlan.collectAsState()
+
+    // ============================================================
     // MONTHLY SUMMARY
     // ============================================================
 
     val presentCount = monthlyAttendance.count {
-        it.status.equals("Present", ignoreCase = true)
+        it.status.equals(
+            "Present",
+            ignoreCase = true
+        )
     }
 
     val lateCount = monthlyAttendance.count {
-        it.status.equals("Late", ignoreCase = true)
+        it.status.equals(
+            "Late",
+            ignoreCase = true
+        )
     }
 
     val absentCount = monthlyAttendance.count {
-        it.status.equals("Absent", ignoreCase = true)
+        it.status.equals(
+            "Absent",
+            ignoreCase = true
+        )
     }
 
     val notMarkedCount = monthlyAttendance.count {
-        it.status.equals("Not Marked", ignoreCase = true)
+        it.status.equals(
+            "Not Marked",
+            ignoreCase = true
+        )
     }
 
-    val totalDays = monthlyAttendance.size
+    val totalDays =
+        monthlyAttendance.size
 
-    val markedDays = presentCount + lateCount
+    val markedDays =
+        presentCount + lateCount
 
     val attendanceRate =
         if (totalDays > 0) {
@@ -100,7 +126,8 @@ fun AttendanceScreen(
         }
 
     // Show only recent records on the main attendance page.
-    val recentRecords = monthlyAttendance.take(5)
+    val recentRecords =
+        monthlyAttendance.take(5)
 
     Scaffold(
         containerColor = Background,
@@ -117,11 +144,17 @@ fun AttendanceScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp)
+                .verticalScroll(
+                    rememberScrollState()
+                )
+                .padding(
+                    horizontal = 20.dp
+                )
         ) {
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(
+                modifier = Modifier.height(24.dp)
+            )
 
             // =====================================================
             // HEADER
@@ -134,7 +167,9 @@ fun AttendanceScreen(
                 fontWeight = FontWeight.Bold
             )
 
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(
+                modifier = Modifier.height(4.dp)
+            )
 
             Text(
                 text = "Manage your daily attendance",
@@ -142,7 +177,9 @@ fun AttendanceScreen(
                 style = MaterialTheme.typography.bodyMedium
             )
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(
+                modifier = Modifier.height(20.dp)
+            )
 
             // =====================================================
             // TODAY
@@ -153,17 +190,47 @@ fun AttendanceScreen(
                 onCalendarClick = onCalendarClick
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(
+                modifier = Modifier.height(16.dp)
+            )
+
+            // =====================================================
+            // TODAY'S WORK PLAN
+            //
+            // Only show this before the employee checks in.
+            // The employee can optionally write what they plan
+            // to work on today.
+            // =====================================================
+
+            if (todayAttendance.checkIn == null) {
+
+                TodayWorkPlanCard(
+                    workPlan = todayWorkPlan,
+                    onWorkPlanChange = {
+                        viewModel.setTodayWorkPlan(
+                            it
+                        )
+                    }
+                )
+
+                Spacer(
+                    modifier = Modifier.height(16.dp)
+                )
+            }
 
             // =====================================================
             // FACE RECOGNITION
             // =====================================================
 
             FaceAttendanceCard(
-                onFaceRecognition = onFaceRecognition
+                onFaceRecognition = {
+                    onFaceRecognition()
+                }
             )
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(
+                modifier = Modifier.height(20.dp)
+            )
 
             // =====================================================
             // MONTHLY SUMMARY
@@ -173,7 +240,9 @@ fun AttendanceScreen(
                 title = "This Month"
             )
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(
+                modifier = Modifier.height(10.dp)
+            )
 
             AttendanceSummaryCard(
                 presentCount = presentCount,
@@ -183,7 +252,9 @@ fun AttendanceScreen(
                 attendanceRate = attendanceRate
             )
 
-            Spacer(modifier = Modifier.height(22.dp))
+            Spacer(
+                modifier = Modifier.height(22.dp)
+            )
 
             // =====================================================
             // RECENT HISTORY
@@ -193,7 +264,9 @@ fun AttendanceScreen(
                 title = "Recent Attendance"
             )
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(
+                modifier = Modifier.height(10.dp)
+            )
 
             if (recentRecords.isEmpty()) {
 
@@ -201,19 +274,30 @@ fun AttendanceScreen(
 
             } else {
 
-                recentRecords.forEachIndexed { index, record ->
+                recentRecords.forEachIndexed {
+                        index,
+                        record ->
 
                     AttendanceHistoryItem(
                         record = record
                     )
 
-                    if (index != recentRecords.lastIndex) {
-                        Spacer(modifier = Modifier.height(10.dp))
+                    if (
+                        index !=
+                        recentRecords.lastIndex
+                    ) {
+
+                        Spacer(
+                            modifier =
+                                Modifier.height(10.dp)
+                        )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(
+                modifier = Modifier.height(24.dp)
+            )
         }
     }
 }
@@ -227,6 +311,7 @@ fun AttendanceScreen(
 private fun SectionTitle(
     title: String
 ) {
+
     Text(
         text = title,
         color = TextPrimary,
@@ -262,7 +347,8 @@ private fun TodayAttendanceCard(
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment =
+                    Alignment.CenterVertically
             ) {
 
                 Column(
@@ -271,23 +357,28 @@ private fun TodayAttendanceCard(
 
                     Text(
                         text = "Today's Attendance",
-                        color = Color.White.copy(alpha = 0.78f),
-                        style = MaterialTheme.typography.bodySmall
+                        color =
+                            Color.White.copy(
+                                alpha = 0.78f
+                            ),
+                        style =
+                            MaterialTheme.typography.bodySmall
                     )
 
-                    Spacer(modifier = Modifier.height(5.dp))
+                    Spacer(
+                        modifier =
+                            Modifier.height(5.dp)
+                    )
 
                     Text(
                         text = attendance.status,
                         color = Color.White,
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
+                        style =
+                            MaterialTheme.typography.titleLarge,
+                        fontWeight =
+                            FontWeight.Bold
                     )
                 }
-
-                // =================================================
-                // CALENDAR BUTTON
-                // =================================================
 
                 IconButton(
                     onClick = onCalendarClick,
@@ -298,42 +389,57 @@ private fun TodayAttendanceCard(
                         modifier = Modifier
                             .size(46.dp)
                             .background(
-                                color = Color.White.copy(alpha = 0.15f),
+                                color =
+                                    Color.White.copy(
+                                        alpha = 0.15f
+                                    ),
                                 shape = CircleShape
                             ),
-                        contentAlignment = Alignment.Center
+                        contentAlignment =
+                            Alignment.Center
                     ) {
 
                         Icon(
-                            imageVector = Icons.Default.CalendarMonth,
-                            contentDescription = "Open attendance calendar",
+                            imageVector =
+                                Icons.Default.CalendarMonth,
+                            contentDescription =
+                                "Open attendance calendar",
                             tint = Color.White,
-                            modifier = Modifier.size(24.dp)
+                            modifier =
+                                Modifier.size(24.dp)
                         )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(
+                modifier = Modifier.height(20.dp)
+            )
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement =
+                    Arrangement.SpaceBetween
             ) {
 
                 TodayTimeItem(
                     title = "Check In",
-                    value = attendance.checkIn ?: "--:--"
+                    value =
+                        attendance.checkIn
+                            ?: "--:--"
                 )
 
                 TodayTimeItem(
                     title = "Check Out",
-                    value = attendance.checkOut ?: "--:--"
+                    value =
+                        attendance.checkOut
+                            ?: "--:--"
                 )
 
                 TodayTimeItem(
                     title = "Working Hours",
-                    value = attendance.workingHours
+                    value =
+                        attendance.workingHours
                 )
             }
         }
@@ -355,18 +461,116 @@ private fun TodayTimeItem(
 
         Text(
             text = title,
-            color = Color.White.copy(alpha = 0.70f),
-            style = MaterialTheme.typography.labelSmall
+            color =
+                Color.White.copy(
+                    alpha = 0.70f
+                ),
+            style =
+                MaterialTheme.typography.labelSmall
         )
 
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(
+            modifier = Modifier.height(4.dp)
+        )
 
         Text(
             text = value,
             color = Color.White,
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.SemiBold
+            style =
+                MaterialTheme.typography.titleSmall,
+            fontWeight =
+                FontWeight.SemiBold
         )
+    }
+}
+
+
+// =============================================================
+// TODAY'S WORK PLAN CARD
+// =============================================================
+
+@Composable
+private fun TodayWorkPlanCard(
+    workPlan: String,
+    onWorkPlanChange: (String) -> Unit
+) {
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(22.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = CardWhite
+        ),
+        elevation =
+            CardDefaults.cardElevation(
+                defaultElevation = 1.dp
+            )
+    ) {
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp)
+        ) {
+
+            Text(
+                text = "Today's Work Plan",
+                color = TextPrimary,
+                style =
+                    MaterialTheme.typography.titleMedium,
+                fontWeight =
+                    FontWeight.SemiBold
+            )
+
+            Spacer(
+                modifier = Modifier.height(4.dp)
+            )
+
+            Text(
+                text =
+                    "Write what you plan to work on today",
+                color = TextSecondary,
+                style =
+                    MaterialTheme.typography.bodySmall
+            )
+
+            Spacer(
+                modifier = Modifier.height(12.dp)
+            )
+
+            OutlinedTextField(
+                value = workPlan,
+                onValueChange = onWorkPlanChange,
+                modifier = Modifier.fillMaxWidth(),
+                minLines = 3,
+                maxLines = 5,
+                placeholder = {
+
+                    Text(
+                        text =
+                            "What are you starting?/finishing?Anything your manager should know about?"
+                    )
+                },
+                shape =
+                    RoundedCornerShape(14.dp),
+                keyboardOptions =
+                    KeyboardOptions(
+                        keyboardType =
+                            KeyboardType.Text
+                    )
+            )
+
+            Spacer(
+                modifier = Modifier.height(6.dp)
+            )
+
+            Text(
+                text = "Optional",
+                color = TextSecondary,
+                style =
+                    MaterialTheme.typography.labelSmall
+            )
+        }
     }
 }
 
@@ -386,9 +590,10 @@ private fun FaceAttendanceCard(
         colors = CardDefaults.cardColors(
             containerColor = CardWhite
         ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 1.dp
-        )
+        elevation =
+            CardDefaults.cardElevation(
+                defaultElevation = 1.dp
+            )
     ) {
 
         Column(
@@ -398,26 +603,34 @@ private fun FaceAttendanceCard(
         ) {
 
             Row(
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment =
+                    Alignment.CenterVertically
             ) {
 
                 Box(
                     modifier = Modifier
                         .size(52.dp)
                         .clip(CircleShape)
-                        .background(TealLight),
-                    contentAlignment = Alignment.Center
+                        .background(
+                            TealLight
+                        ),
+                    contentAlignment =
+                        Alignment.Center
                 ) {
 
                     Icon(
-                        imageVector = Icons.Default.CameraAlt,
+                        imageVector =
+                            Icons.Default.CameraAlt,
                         contentDescription = null,
                         tint = Teal,
-                        modifier = Modifier.size(27.dp)
+                        modifier =
+                            Modifier.size(27.dp)
                     )
                 }
 
-                Spacer(modifier = Modifier.width(14.dp))
+                Spacer(
+                    modifier = Modifier.width(14.dp)
+                )
 
                 Column(
                     modifier = Modifier.weight(1f)
@@ -426,21 +639,30 @@ private fun FaceAttendanceCard(
                     Text(
                         text = "Mark Attendance",
                         color = TextPrimary,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold
+                        style =
+                            MaterialTheme.typography.titleMedium,
+                        fontWeight =
+                            FontWeight.SemiBold
                     )
 
-                    Spacer(modifier = Modifier.height(3.dp))
+                    Spacer(
+
+                        modifier = Modifier.height(3.dp)
+                    )
 
                     Text(
-                        text = "Use face recognition to check in or check out",
+                        text =
+                            "Use face recognition to check in or check out",
                         color = TextSecondary,
-                        style = MaterialTheme.typography.bodySmall
+                        style =
+                            MaterialTheme.typography.bodySmall
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(18.dp))
+            Spacer(
+                modifier = Modifier.height(18.dp)
+            )
 
             Button(
                 onClick = onFaceRecognition,
@@ -449,11 +671,14 @@ private fun FaceAttendanceCard(
             ) {
 
                 Icon(
-                    imageVector = Icons.Default.CameraAlt,
+                    imageVector =
+                        Icons.Default.CameraAlt,
                     contentDescription = null
                 )
 
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(
+                    modifier = Modifier.width(8.dp)
+                )
 
                 Text(
                     text = "Verify with Face"
@@ -483,9 +708,10 @@ private fun AttendanceSummaryCard(
         colors = CardDefaults.cardColors(
             containerColor = CardWhite
         ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 1.dp
-        )
+        elevation =
+            CardDefaults.cardElevation(
+                defaultElevation = 1.dp
+            )
     ) {
 
         Column(
@@ -496,8 +722,10 @@ private fun AttendanceSummaryCard(
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                horizontalArrangement =
+                    Arrangement.SpaceBetween,
+                verticalAlignment =
+                    Alignment.CenterVertically
             ) {
 
                 Column {
@@ -505,16 +733,22 @@ private fun AttendanceSummaryCard(
                     Text(
                         text = "Attendance Overview",
                         color = TextPrimary,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold
+                        style =
+                            MaterialTheme.typography.titleMedium,
+                        fontWeight =
+                            FontWeight.SemiBold
                     )
 
-                    Spacer(modifier = Modifier.height(3.dp))
+                    Spacer(
+                        modifier =
+                            Modifier.height(3.dp)
+                    )
 
                     Text(
                         text = "Current month",
                         color = TextSecondary,
-                        style = MaterialTheme.typography.bodySmall
+                        style =
+                            MaterialTheme.typography.bodySmall
                     )
                 }
 
@@ -525,59 +759,81 @@ private fun AttendanceSummaryCard(
                             color = TealLight,
                             shape = CircleShape
                         ),
-                    contentAlignment = Alignment.Center
+                    contentAlignment =
+                        Alignment.Center
                 ) {
 
                     Text(
                         text = "$attendanceRate%",
                         color = Teal,
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold
+                        style =
+                            MaterialTheme.typography.titleSmall,
+                        fontWeight =
+                            FontWeight.Bold
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(18.dp))
+            Spacer(
+                modifier = Modifier.height(18.dp)
+            )
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                horizontalArrangement =
+                    Arrangement.spacedBy(6.dp)
             ) {
 
                 SummaryItem(
-                    modifier = Modifier.weight(1f),
+                    modifier =
+                        Modifier.weight(1f),
                     value = presentCount,
                     label = "Present",
-                    icon = Icons.Default.CheckCircle,
-                    iconBackground = SuccessLight,
-                    iconTint = Success
+                    icon =
+                        Icons.Default.CheckCircle,
+                    iconBackground =
+                        SuccessLight,
+                    iconTint =
+                        Success
                 )
 
                 SummaryItem(
-                    modifier = Modifier.weight(1f),
+                    modifier =
+                        Modifier.weight(1f),
                     value = lateCount,
                     label = "Late",
-                    icon = Icons.Default.Schedule,
-                    iconBackground = TealLight,
-                    iconTint = Teal
+                    icon =
+                        Icons.Default.Schedule,
+                    iconBackground =
+                        TealLight,
+                    iconTint =
+                        Teal
                 )
 
                 SummaryItem(
-                    modifier = Modifier.weight(1f),
+                    modifier =
+                        Modifier.weight(1f),
                     value = absentCount,
                     label = "Absent",
-                    icon = Icons.Default.Warning,
-                    iconBackground = Color(0xFFFFF1F0),
-                    iconTint = Color(0xFFD9534F)
+                    icon =
+                        Icons.Default.Warning,
+                    iconBackground =
+                        Color(0xFFFFF1F0),
+                    iconTint =
+                        Color(0xFFD9534F)
                 )
 
                 SummaryItem(
-                    modifier = Modifier.weight(1f),
+                    modifier =
+                        Modifier.weight(1f),
                     value = notMarkedCount,
                     label = "Not Marked",
-                    icon = Icons.Default.AccessTime,
-                    iconBackground = Color(0xFFF1F3F5),
-                    iconTint = TextSecondary
+                    icon =
+                        Icons.Default.AccessTime,
+                    iconBackground =
+                        Color(0xFFF1F3F5),
+                    iconTint =
+                        TextSecondary
                 )
             }
         }
@@ -601,7 +857,8 @@ private fun SummaryItem(
 
     Column(
         modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment =
+            Alignment.CenterHorizontally
     ) {
 
         Box(
@@ -611,7 +868,8 @@ private fun SummaryItem(
                     color = iconBackground,
                     shape = CircleShape
                 ),
-            contentAlignment = Alignment.Center
+            contentAlignment =
+                Alignment.Center
         ) {
 
             Icon(
@@ -622,19 +880,24 @@ private fun SummaryItem(
             )
         }
 
-        Spacer(modifier = Modifier.height(6.dp))
+        Spacer(
+            modifier = Modifier.height(6.dp)
+        )
 
         Text(
             text = value.toString(),
             color = TextPrimary,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold
+            style =
+                MaterialTheme.typography.titleMedium,
+            fontWeight =
+                FontWeight.Bold
         )
 
         Text(
             text = label,
             color = TextSecondary,
-            style = MaterialTheme.typography.labelSmall
+            style =
+                MaterialTheme.typography.labelSmall
         )
     }
 }
@@ -649,50 +912,64 @@ private fun AttendanceHistoryItem(
     record: AttendanceRecord
 ) {
 
-    val normalizedStatus = record.status
-        .trim()
-        .lowercase()
+    val normalizedStatus =
+        record.status
+            .trim()
+            .lowercase()
 
-    val statusColor = when (normalizedStatus) {
+    val statusColor =
+        when (normalizedStatus) {
 
-        "present" -> Success
+            "present" ->
+                Success
 
-        "late" -> Teal
+            "late" ->
+                Teal
 
-        "absent" -> Color(0xFFD9534F)
+            "absent" ->
+                Color(0xFFD9534F)
 
-        "not marked" -> TextSecondary
+            "not marked" ->
+                TextSecondary
 
-        else -> TextSecondary
-    }
+            else ->
+                TextSecondary
+        }
 
-    val statusBackground = when (normalizedStatus) {
+    val statusBackground =
+        when (normalizedStatus) {
 
-        "present" -> SuccessLight
+            "present" ->
+                SuccessLight
 
-        "late" -> TealLight
+            "late" ->
+                TealLight
 
-        "absent" -> Color(0xFFFFF1F0)
+            "absent" ->
+                Color(0xFFFFF1F0)
 
-        "not marked" -> Color(0xFFF1F3F5)
+            "not marked" ->
+                Color(0xFFF1F3F5)
 
-        else -> Color(0xFFF1F3F5)
-    }
+            else ->
+                Color(0xFFF1F3F5)
+        }
 
-    val statusIcon = when (normalizedStatus) {
+    val statusIcon =
+        when (normalizedStatus) {
 
-        "present" ->
-            Icons.Default.CheckCircle
+            "present" ->
+                Icons.Default.CheckCircle
 
-        "late" ->
-            Icons.Default.Schedule
+            "late" ->
+                Icons.Default.Schedule
 
-        "absent" ->
-            Icons.Default.Warning
+            "absent" ->
+                Icons.Default.Warning
 
-        else ->
-            Icons.Default.AccessTime
-    }
+            else ->
+                Icons.Default.AccessTime
+        }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -706,7 +983,8 @@ private fun AttendanceHistoryItem(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment =
+                Alignment.CenterVertically
         ) {
 
             Box(
@@ -716,7 +994,8 @@ private fun AttendanceHistoryItem(
                         color = statusBackground,
                         shape = CircleShape
                     ),
-                contentAlignment = Alignment.Center
+                contentAlignment =
+                    Alignment.Center
             ) {
 
                 Icon(
@@ -727,7 +1006,9 @@ private fun AttendanceHistoryItem(
                 )
             }
 
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(
+                modifier = Modifier.width(12.dp)
+            )
 
             Column(
                 modifier = Modifier.weight(1f)
@@ -736,47 +1017,62 @@ private fun AttendanceHistoryItem(
                 Text(
                     text = record.date,
                     color = TextPrimary,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold
+                    style =
+                        MaterialTheme.typography.titleSmall,
+                    fontWeight =
+                        FontWeight.SemiBold
                 )
 
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(
+                    modifier = Modifier.height(4.dp)
+                )
 
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    horizontalArrangement =
+                        Arrangement.spacedBy(10.dp)
                 ) {
 
                     Text(
-                        text = "IN ${record.checkIn ?: "--:--"}",
+                        text =
+                            "IN ${record.checkIn ?: "--:--"}",
                         color = TextSecondary,
-                        style = MaterialTheme.typography.bodySmall
+                        style =
+                            MaterialTheme.typography.bodySmall
                     )
 
                     Text(
-                        text = "OUT ${record.checkOut ?: "--:--"}",
+                        text =
+                            "OUT ${record.checkOut ?: "--:--"}",
                         color = TextSecondary,
-                        style = MaterialTheme.typography.bodySmall
+                        style =
+                            MaterialTheme.typography.bodySmall
                     )
                 }
             }
 
             Column(
-                horizontalAlignment = Alignment.End
+                horizontalAlignment =
+                    Alignment.End
             ) {
 
                 Text(
                     text = record.status,
                     color = statusColor,
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Bold
+                    style =
+                        MaterialTheme.typography.labelMedium,
+                    fontWeight =
+                        FontWeight.Bold
                 )
 
-                Spacer(modifier = Modifier.height(3.dp))
+                Spacer(
+                    modifier = Modifier.height(3.dp)
+                )
 
                 Text(
                     text = record.workingHours,
                     color = TextSecondary,
-                    style = MaterialTheme.typography.labelSmall
+                    style =
+                        MaterialTheme.typography.labelSmall
                 )
             }
         }
@@ -817,7 +1113,8 @@ private fun EmptyAttendanceHistory() {
                         color = TealLight,
                         shape = CircleShape
                     ),
-                contentAlignment = Alignment.Center
+                contentAlignment =
+                    Alignment.Center
             ) {
 
                 Icon(
@@ -829,21 +1126,29 @@ private fun EmptyAttendanceHistory() {
                 )
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(
+                modifier = Modifier.height(10.dp)
+            )
 
             Text(
                 text = "No attendance yet",
                 color = TextPrimary,
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold
+                style =
+                    MaterialTheme.typography.titleSmall,
+                fontWeight =
+                    FontWeight.SemiBold
             )
 
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(
+                modifier = Modifier.height(4.dp)
+            )
 
             Text(
-                text = "Your attendance records will appear here.",
+                text =
+                    "Your attendance records will appear here.",
                 color = TextSecondary,
-                style = MaterialTheme.typography.bodySmall
+                style =
+                    MaterialTheme.typography.bodySmall
             )
         }
     }

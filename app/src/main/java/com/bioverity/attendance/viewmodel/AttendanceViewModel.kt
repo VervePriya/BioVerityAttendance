@@ -174,6 +174,33 @@ class AttendanceViewModel : ViewModel() {
         _errorMessage.asStateFlow()
 
     // =============================================================
+// TODAY'S WORK PLAN / NOTE
+// =============================================================
+
+    private val _todayWorkPlan =
+        MutableStateFlow("")
+
+    val todayWorkPlan: StateFlow<String> =
+        _todayWorkPlan.asStateFlow()
+
+    fun setTodayWorkPlan(
+        workPlan: String
+    ) {
+        _todayWorkPlan.value = workPlan
+    }
+    private val _todayCheckoutNote = MutableStateFlow("")
+    val todayCheckoutNote: StateFlow<String> =
+        _todayCheckoutNote.asStateFlow()
+
+    fun setTodayCheckoutNote(note: String) {
+        _todayCheckoutNote.value = note
+    }
+
+    fun clearTodayWorkPlan() {
+        _todayWorkPlan.value = ""
+    }
+
+    // =============================================================
     // LOAD EMPLOYEE
     // =============================================================
 
@@ -1319,6 +1346,10 @@ class AttendanceViewModel : ViewModel() {
 
         _errorMessage.value =
             null
+    }
+
+    fun clearTodayCheckoutNote() {
+        _todayCheckoutNote.value = ""
     }
 
     // =============================================================

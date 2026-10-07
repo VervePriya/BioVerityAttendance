@@ -1,4 +1,3 @@
-
 package com.bioverity.attendance.navigation
 
 import android.net.Uri
@@ -102,11 +101,6 @@ fun AppNavigation(
 
             // ------------------------------------------------
             // FIRST TRY THE URI FRAGMENT
-            //
-            // Example:
-            //
-            // bioverity://reset-password
-            // #access_token=ABC&type=recovery
             // ------------------------------------------------
 
             val fragmentParameters =
@@ -287,11 +281,6 @@ fun AppNavigation(
 
     // ----------------------------------------------------
     // PASSWORD RESET SCREEN
-    //
-    // IMPORTANT:
-    // This is checked BEFORE LOGIN.
-    // Therefore the reset screen can open even when
-    // the user is currently logged out.
     // ----------------------------------------------------
 
     if (!resetAccessToken.isNullOrBlank()) {
@@ -318,6 +307,10 @@ fun AppNavigation(
                 showCalendar = false
 
                 showLeaveApproval = false
+
+                attendanceViewModel.clearTodayWorkPlan()
+
+                attendanceViewModel.clearTodayCheckoutNote()
             }
         )
 
@@ -380,6 +373,10 @@ fun AppNavigation(
                 showLeaveApproval = false
 
                 showForgotPassword = false
+
+                attendanceViewModel.clearTodayWorkPlan()
+
+                attendanceViewModel.clearTodayCheckoutNote()
             },
 
             onForgotPassword = {
@@ -469,6 +466,10 @@ fun AppNavigation(
             onBack = {
 
                 showFaceRecognition = false
+
+                // Clear temporary checkout note
+                // when leaving face recognition.
+                attendanceViewModel.clearTodayCheckoutNote()
             },
 
             onFaceDetected = {
@@ -602,6 +603,10 @@ fun AppNavigation(
                     showForgotPassword = false
 
                     resetAccessToken = null
+
+                    attendanceViewModel.clearTodayWorkPlan()
+
+                    attendanceViewModel.clearTodayCheckoutNote()
                 }
             )
         }
@@ -636,4 +641,3 @@ fun AppNavigation(
         }
     }
 }
-
