@@ -1,4 +1,3 @@
-
 package com.bioverity.attendance.ui.screens
 
 import android.Manifest
@@ -28,6 +27,7 @@ import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.EventAvailable
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.NotificationsNone
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Verified
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -49,11 +49,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.font.FontWeight
 import coil.compose.AsyncImage
 import com.bioverity.attendance.ui.components.AttendanceStatusCard
-import com.bioverity.attendance.ui.components.AttendanceSummaryCard
 import com.bioverity.attendance.ui.components.BottomNavigationBar
 import com.bioverity.attendance.ui.components.RecentAttendanceItem
 import com.bioverity.attendance.ui.theme.Background
@@ -65,6 +64,7 @@ import com.bioverity.attendance.ui.theme.Teal
 import com.bioverity.attendance.ui.theme.TealLight
 import com.bioverity.attendance.ui.theme.TextPrimary
 import com.bioverity.attendance.ui.theme.TextSecondary
+import com.bioverity.attendance.viewmodel.AttendanceOverview
 import com.bioverity.attendance.viewmodel.AttendanceViewModel
 import com.bioverity.attendance.viewmodel.LocationUiState
 import com.bioverity.attendance.viewmodel.LocationViewModel
@@ -72,6 +72,7 @@ import kotlinx.coroutines.delay
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+
 
 private val SriLankaZone: ZoneId =
     ZoneId.of("Asia/Colombo")
@@ -96,7 +97,8 @@ fun HomeScreen(
         androidx.lifecycle.viewmodel.compose.viewModel()
 ) {
 
-    val employee by viewModel.employee.collectAsState()
+    val employee by
+    viewModel.employee.collectAsState()
 
     val attendance by
     viewModel.todayAttendance.collectAsState()
@@ -104,8 +106,8 @@ fun HomeScreen(
     val recentAttendance by
     viewModel.recentAttendance.collectAsState()
 
-    val monthlyAttendance by
-    viewModel.monthlyAttendance.collectAsState()
+    val attendanceOverview by
+    viewModel.attendanceOverview.collectAsState()
 
     val locationState by
     locationViewModel.locationState.collectAsState()
@@ -457,16 +459,16 @@ fun HomeScreen(
 
 
             // =================================================
-            // MONTHLY OVERVIEW
+            // MONTHLY ATTENDANCE
             // =================================================
 
             SectionHeader(
 
                 title =
-                    "Monthly Overview",
+                    "Monthly Attendance",
 
                 subtitle =
-                    "Your attendance at a glance"
+                    "Your attendance summary for this month"
             )
 
 
@@ -476,9 +478,9 @@ fun HomeScreen(
             )
 
 
-            AttendanceSummaryCard(
-                attendanceRecords =
-                    monthlyAttendance
+            MonthlyAttendanceCard(
+                overview =
+                    attendanceOverview
             )
 
 
@@ -512,11 +514,6 @@ fun HomeScreen(
 
                 onClick = {
 
-                    /*
-                     * AppNavigation handles:
-                     *
-                     * 3 -> LeaveScreen
-                     */
                     onNavigate(3)
                 }
             )
@@ -658,6 +655,499 @@ fun HomeScreen(
                 modifier =
                     Modifier.height(24.dp)
             )
+        }
+    }
+}
+
+
+// =============================================================
+// MONTHLY ATTENDANCE CARD
+// =============================================================
+
+@Composable
+private fun MonthlyAttendanceCard(
+    overview: AttendanceOverview
+) {
+
+    Card(
+
+        modifier =
+            Modifier.fillMaxWidth(),
+
+        shape =
+            RoundedCornerShape(18.dp),
+
+        colors =
+            CardDefaults.cardColors(
+                containerColor =
+                    CardWhite
+            ),
+
+        elevation =
+            CardDefaults.cardElevation(
+                defaultElevation =
+                    0.dp
+            )
+    ) {
+
+        Column(
+
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(18.dp)
+        ) {
+
+            // -------------------------------------------------
+            // ATTENDANCE RATE
+            // -------------------------------------------------
+
+            Row(
+
+                modifier =
+                    Modifier.fillMaxWidth(),
+
+                horizontalArrangement =
+                    Arrangement.SpaceBetween,
+
+                verticalAlignment =
+                    Alignment.CenterVertically
+            ) {
+
+                Column {
+
+                    Text(
+
+                        text =
+                            "Attendance Rate",
+
+                        color =
+                            TextSecondary,
+
+                        style =
+                            MaterialTheme
+                                .typography
+                                .bodySmall
+                    )
+
+
+                    Spacer(
+                        modifier =
+                            Modifier.height(3.dp)
+                    )
+
+
+                    Text(
+
+                        text =
+                            "${overview.attendanceRate}%",
+
+                        color =
+                            TextPrimary,
+
+                        style =
+                            MaterialTheme
+                                .typography
+                                .headlineMedium,
+
+                        fontWeight =
+                            FontWeight.Bold
+                    )
+                }
+
+
+                Box(
+
+                    modifier =
+                        Modifier
+                            .size(48.dp)
+                            .background(
+                                color =
+                                    TealLight,
+                                shape =
+                                    CircleShape
+                            ),
+
+                    contentAlignment =
+                        Alignment.Center
+                ) {
+
+                    Icon(
+
+                        imageVector =
+                            Icons.Default
+                                .CalendarMonth,
+
+                        contentDescription =
+                            "Monthly attendance",
+
+                        tint =
+                            Teal,
+
+                        modifier =
+                            Modifier.size(24.dp)
+                    )
+                }
+            }
+
+
+            Spacer(
+                modifier =
+                    Modifier.height(18.dp)
+            )
+
+
+            // -------------------------------------------------
+            // FIRST ROW
+            // -------------------------------------------------
+
+            Row(
+
+                modifier =
+                    Modifier.fillMaxWidth(),
+
+                horizontalArrangement =
+                    Arrangement.spacedBy(10.dp)
+            ) {
+
+                MonthlyAttendanceItem(
+
+                    modifier =
+                        Modifier.weight(1f),
+
+                    title =
+                        "Present",
+
+                    value =
+                        overview.present,
+
+                    icon =
+                        Icons.Default.Verified,
+
+                    iconColor =
+                        Success,
+
+                    iconBackground =
+                        SuccessLight
+                )
+
+
+                MonthlyAttendanceItem(
+
+                    modifier =
+                        Modifier.weight(1f),
+
+                    title =
+                        "Late",
+
+                    value =
+                        overview.late,
+
+                    icon =
+                        Icons.Default.AccessTime,
+
+                    iconColor =
+                        Teal,
+
+                    iconBackground =
+                        TealLight
+                )
+            }
+
+
+            Spacer(
+                modifier =
+                    Modifier.height(10.dp)
+            )
+
+
+            // -------------------------------------------------
+            // SECOND ROW
+            // -------------------------------------------------
+
+            Row(
+
+                modifier =
+                    Modifier.fillMaxWidth(),
+
+                horizontalArrangement =
+                    Arrangement.spacedBy(10.dp)
+            ) {
+
+                MonthlyAttendanceItem(
+
+                    modifier =
+                        Modifier.weight(1f),
+
+                    title =
+                        "Short Hours",
+
+                    value =
+                        overview.shortHours,
+
+                    icon =
+                        Icons.Default.AccessTime,
+
+                    iconColor =
+                        Teal,
+
+                    iconBackground =
+                        TealLight
+                )
+
+
+                MonthlyAttendanceItem(
+
+                    modifier =
+                        Modifier.weight(1f),
+
+                    title =
+                        "Leave",
+
+                    value =
+                        overview.leave,
+
+                    icon =
+                        Icons.Default.EventAvailable,
+
+                    iconColor =
+                        Teal,
+
+                    iconBackground =
+                        TealLight
+                )
+            }
+
+
+            Spacer(
+                modifier =
+                    Modifier.height(10.dp)
+            )
+
+
+            // -------------------------------------------------
+            // THIRD ROW
+            // -------------------------------------------------
+
+            Row(
+
+                modifier =
+                    Modifier.fillMaxWidth(),
+
+                horizontalArrangement =
+                    Arrangement.spacedBy(10.dp)
+            ) {
+
+                MonthlyAttendanceItem(
+
+                    modifier =
+                        Modifier.weight(1f),
+
+                    title =
+                        "Absent",
+
+                    value =
+                        overview.absent,
+
+                    icon =
+                        Icons.Default.CalendarMonth,
+
+                    iconColor =
+                        MaterialTheme
+                            .colorScheme
+                            .error,
+
+                    iconBackground =
+                        MaterialTheme
+                            .colorScheme
+                            .errorContainer
+                )
+
+
+                MonthlyAttendanceItem(
+
+                    modifier =
+                        Modifier.weight(1f),
+
+                    title =
+                        "Check-out",
+
+                    value =
+                        overview.checkOutRequired,
+
+                    icon =
+                        Icons.Default.Schedule,
+
+                    iconColor =
+                        Color(0xFFC28A00),
+
+                    iconBackground =
+                        Color(0xFFFFF8E1)
+                )
+            }
+
+
+            Spacer(
+                modifier =
+                    Modifier.height(10.dp)
+            )
+
+
+            // -------------------------------------------------
+            // FOURTH ROW
+            // -------------------------------------------------
+
+            Row(
+
+                modifier =
+                    Modifier.fillMaxWidth()
+            ) {
+
+                MonthlyAttendanceItem(
+
+                    modifier =
+                        Modifier.fillMaxWidth(),
+
+                    title =
+                        "Not Marked",
+
+                    value =
+                        overview.notMarked,
+
+                    icon =
+                        Icons.Default.AccessTime,
+
+                    iconColor =
+                        TextSecondary,
+
+                    iconBackground =
+                        Color(0xFFF1F3F5)
+                )
+            }
+        }
+    }
+}
+
+
+// =============================================================
+// MONTHLY ATTENDANCE ITEM
+// =============================================================
+
+@Composable
+private fun MonthlyAttendanceItem(
+    modifier: Modifier,
+    title: String,
+    value: Int,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    iconColor: Color,
+    iconBackground: Color
+) {
+
+    Card(
+
+        modifier =
+            modifier,
+
+        shape =
+            RoundedCornerShape(14.dp),
+
+        colors =
+            CardDefaults.cardColors(
+                containerColor =
+                    Background
+            ),
+
+        elevation =
+            CardDefaults.cardElevation(
+                defaultElevation =
+                    0.dp
+            )
+    ) {
+
+        Row(
+
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp),
+
+            verticalAlignment =
+                Alignment.CenterVertically
+        ) {
+
+            Box(
+
+                modifier =
+                    Modifier
+                        .size(36.dp)
+                        .background(
+                            color =
+                                iconBackground,
+                            shape =
+                                CircleShape
+                        ),
+
+                contentAlignment =
+                    Alignment.Center
+            ) {
+
+                Icon(
+
+                    imageVector =
+                        icon,
+
+                    contentDescription =
+                        title,
+
+                    tint =
+                        iconColor,
+
+                    modifier =
+                        Modifier.size(18.dp)
+                )
+            }
+
+
+            Spacer(
+                modifier =
+                    Modifier.width(9.dp)
+            )
+
+
+            Column {
+
+                Text(
+
+                    text =
+                        title,
+
+                    color =
+                        TextSecondary,
+
+                    style =
+                        MaterialTheme
+                            .typography
+                            .labelSmall
+                )
+
+
+                Text(
+
+                    text =
+                        value.toString(),
+
+                    color =
+                        TextPrimary,
+
+                    style =
+                        MaterialTheme
+                            .typography
+                            .titleMedium,
+
+                    fontWeight =
+                        FontWeight.Bold
+                )
+            }
         }
     }
 }
@@ -1614,4 +2104,3 @@ private fun getGreeting(
             "Good Evening"
     }
 }
-

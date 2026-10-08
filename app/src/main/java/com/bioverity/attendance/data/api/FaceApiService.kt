@@ -47,7 +47,6 @@ interface FaceApiService {
         @Body request: ForgotPasswordRequest
     ): ForgotPasswordResponse
 
-
     // ---------------------------------------------------------
 // RESET PASSWORD
 // ---------------------------------------------------------

@@ -5,5 +5,6 @@ data class AttendanceRecord(
     val checkIn: String?,
     val checkOut: String?,
     val status: String,
-    val workingHours: String
+    val workingHours: String,
+    val shortBy: String
 )

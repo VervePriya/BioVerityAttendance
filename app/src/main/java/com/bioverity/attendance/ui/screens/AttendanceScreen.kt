@@ -54,6 +54,7 @@ import com.bioverity.attendance.ui.theme.Teal
 import com.bioverity.attendance.ui.theme.TealLight
 import com.bioverity.attendance.ui.theme.TextPrimary
 import com.bioverity.attendance.ui.theme.TextSecondary
+import com.bioverity.attendance.viewmodel.AttendanceOverview
 import com.bioverity.attendance.viewmodel.AttendanceViewModel
 
 @Composable
@@ -70,62 +71,20 @@ fun AttendanceScreen(
     val monthlyAttendance by
     viewModel.monthlyAttendance.collectAsState()
 
+    val attendanceOverview by
+    viewModel.attendanceOverview.collectAsState()
+
     // ============================================================
     // TODAY'S WORK PLAN
-    //
-    // Stored in AttendanceViewModel so it can also be accessed
-    // from FaceRecognitionScreen.
     // ============================================================
 
     val todayWorkPlan by
     viewModel.todayWorkPlan.collectAsState()
 
     // ============================================================
-    // MONTHLY SUMMARY
+    // RECENT RECORDS
     // ============================================================
 
-    val presentCount = monthlyAttendance.count {
-        it.status.equals(
-            "Present",
-            ignoreCase = true
-        )
-    }
-
-    val lateCount = monthlyAttendance.count {
-        it.status.equals(
-            "Late",
-            ignoreCase = true
-        )
-    }
-
-    val absentCount = monthlyAttendance.count {
-        it.status.equals(
-            "Absent",
-            ignoreCase = true
-        )
-    }
-
-    val notMarkedCount = monthlyAttendance.count {
-        it.status.equals(
-            "Not Marked",
-            ignoreCase = true
-        )
-    }
-
-    val totalDays =
-        monthlyAttendance.size
-
-    val markedDays =
-        presentCount + lateCount
-
-    val attendanceRate =
-        if (totalDays > 0) {
-            ((markedDays * 100f) / totalDays).toInt()
-        } else {
-            0
-        }
-
-    // Show only recent records on the main attendance page.
     val recentRecords =
         monthlyAttendance.take(5)
 
@@ -196,10 +155,6 @@ fun AttendanceScreen(
 
             // =====================================================
             // TODAY'S WORK PLAN
-            //
-            // Only show this before the employee checks in.
-            // The employee can optionally write what they plan
-            // to work on today.
             // =====================================================
 
             if (todayAttendance.checkIn == null) {
@@ -207,9 +162,7 @@ fun AttendanceScreen(
                 TodayWorkPlanCard(
                     workPlan = todayWorkPlan,
                     onWorkPlanChange = {
-                        viewModel.setTodayWorkPlan(
-                            it
-                        )
+                        viewModel.setTodayWorkPlan(it)
                     }
                 )
 
@@ -245,11 +198,7 @@ fun AttendanceScreen(
             )
 
             AttendanceSummaryCard(
-                presentCount = presentCount,
-                lateCount = lateCount,
-                absentCount = absentCount,
-                notMarkedCount = notMarkedCount,
-                attendanceRate = attendanceRate
+                overview = attendanceOverview
             )
 
             Spacer(
@@ -442,6 +391,42 @@ private fun TodayAttendanceCard(
                         attendance.workingHours
                 )
             }
+
+            Spacer(
+                modifier = Modifier.height(16.dp)
+            )
+
+            // =====================================================
+            // SHORT BY
+            // =====================================================
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement =
+                    Arrangement.SpaceBetween,
+                verticalAlignment =
+                    Alignment.CenterVertically
+            ) {
+
+                Text(
+                    text = "Short By",
+                    color =
+                        Color.White.copy(
+                            alpha = 0.70f
+                        ),
+                    style =
+                        MaterialTheme.typography.labelSmall
+                )
+
+                Text(
+                    text = attendance.shortBy,
+                    color = Color.White,
+                    style =
+                        MaterialTheme.typography.titleSmall,
+                    fontWeight =
+                        FontWeight.SemiBold
+                )
+            }
         }
     }
 }
@@ -548,7 +533,7 @@ private fun TodayWorkPlanCard(
 
                     Text(
                         text =
-                            "What are you starting?/finishing?Anything your manager should know about?"
+                            "What are you starting/finishing? Anything your manager should know about?"
                     )
                 },
                 shape =
@@ -646,7 +631,6 @@ private fun FaceAttendanceCard(
                     )
 
                     Spacer(
-
                         modifier = Modifier.height(3.dp)
                     )
 
@@ -695,11 +679,7 @@ private fun FaceAttendanceCard(
 
 @Composable
 private fun AttendanceSummaryCard(
-    presentCount: Int,
-    lateCount: Int,
-    absentCount: Int,
-    notMarkedCount: Int,
-    attendanceRate: Int
+    overview: AttendanceOverview
 ) {
 
     Card(
@@ -764,7 +744,7 @@ private fun AttendanceSummaryCard(
                 ) {
 
                     Text(
-                        text = "$attendanceRate%",
+                        text = "${overview.attendanceRate}%",
                         color = Teal,
                         style =
                             MaterialTheme.typography.titleSmall,
@@ -778,6 +758,10 @@ private fun AttendanceSummaryCard(
                 modifier = Modifier.height(18.dp)
             )
 
+            // =====================================================
+            // FIRST ROW
+            // =====================================================
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement =
@@ -787,7 +771,7 @@ private fun AttendanceSummaryCard(
                 SummaryItem(
                     modifier =
                         Modifier.weight(1f),
-                    value = presentCount,
+                    value = overview.present,
                     label = "Present",
                     icon =
                         Icons.Default.CheckCircle,
@@ -800,7 +784,7 @@ private fun AttendanceSummaryCard(
                 SummaryItem(
                     modifier =
                         Modifier.weight(1f),
-                    value = lateCount,
+                    value = overview.late,
                     label = "Late",
                     icon =
                         Icons.Default.Schedule,
@@ -813,7 +797,20 @@ private fun AttendanceSummaryCard(
                 SummaryItem(
                     modifier =
                         Modifier.weight(1f),
-                    value = absentCount,
+                    value = overview.shortHours,
+                    label = "Short Hours",
+                    icon =
+                        Icons.Default.AccessTime,
+                    iconBackground =
+                        Color(0xFFFFF8E1),
+                    iconTint =
+                        Color(0xFFC28A00)
+                )
+
+                SummaryItem(
+                    modifier =
+                        Modifier.weight(1f),
+                    value = overview.absent,
                     label = "Absent",
                     icon =
                         Icons.Default.Warning,
@@ -822,11 +819,52 @@ private fun AttendanceSummaryCard(
                     iconTint =
                         Color(0xFFD9534F)
                 )
+            }
+
+            Spacer(
+                modifier = Modifier.height(12.dp)
+            )
+
+            // =====================================================
+            // SECOND ROW
+            // =====================================================
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement =
+                    Arrangement.spacedBy(6.dp)
+            ) {
 
                 SummaryItem(
                     modifier =
                         Modifier.weight(1f),
-                    value = notMarkedCount,
+                    value = overview.leave,
+                    label = "Leave",
+                    icon =
+                        Icons.Default.CalendarMonth,
+                    iconBackground =
+                        TealLight,
+                    iconTint =
+                        Teal
+                )
+
+                SummaryItem(
+                    modifier =
+                        Modifier.weight(1f),
+                    value = overview.checkOutRequired,
+                    label = "Check-out",
+                    icon =
+                        Icons.Default.Schedule,
+                    iconBackground =
+                        Color(0xFFFFF8E1),
+                    iconTint =
+                        Color(0xFFC28A00)
+                )
+
+                SummaryItem(
+                    modifier =
+                        Modifier.weight(1f),
+                    value = overview.notMarked,
                     label = "Not Marked",
                     icon =
                         Icons.Default.AccessTime,
@@ -926,8 +964,17 @@ private fun AttendanceHistoryItem(
             "late" ->
                 Teal
 
+            "short hours" ->
+                Color(0xFFC28A00)
+
             "absent" ->
                 Color(0xFFD9534F)
+
+            "leave" ->
+                Teal
+
+            "check-out required" ->
+                Color(0xFFC28A00)
 
             "not marked" ->
                 TextSecondary
@@ -945,8 +992,17 @@ private fun AttendanceHistoryItem(
             "late" ->
                 TealLight
 
+            "short hours" ->
+                Color(0xFFFFF8E1)
+
             "absent" ->
                 Color(0xFFFFF1F0)
+
+            "leave" ->
+                TealLight
+
+            "check-out required" ->
+                Color(0xFFFFF8E1)
 
             "not marked" ->
                 Color(0xFFF1F3F5)
@@ -964,8 +1020,17 @@ private fun AttendanceHistoryItem(
             "late" ->
                 Icons.Default.Schedule
 
+            "short hours" ->
+                Icons.Default.AccessTime
+
             "absent" ->
                 Icons.Default.Warning
+
+            "leave" ->
+                Icons.Default.CalendarMonth
+
+            "check-out required" ->
+                Icons.Default.Schedule
 
             else ->
                 Icons.Default.AccessTime
@@ -979,100 +1044,136 @@ private fun AttendanceHistoryItem(
         )
     ) {
 
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment =
-                Alignment.CenterVertically
+                .padding(16.dp)
         ) {
 
-            Box(
-                modifier = Modifier
-                    .size(42.dp)
-                    .background(
-                        color = statusBackground,
-                        shape = CircleShape
-                    ),
-                contentAlignment =
-                    Alignment.Center
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment =
+                    Alignment.CenterVertically
             ) {
 
-                Icon(
-                    imageVector = statusIcon,
-                    contentDescription = null,
-                    tint = statusColor,
-                    modifier = Modifier.size(21.dp)
-                )
-            }
+                Box(
+                    modifier = Modifier
+                        .size(42.dp)
+                        .background(
+                            color = statusBackground,
+                            shape = CircleShape
+                        ),
+                    contentAlignment =
+                        Alignment.Center
+                ) {
 
-            Spacer(
-                modifier = Modifier.width(12.dp)
-            )
-
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
-
-                Text(
-                    text = record.date,
-                    color = TextPrimary,
-                    style =
-                        MaterialTheme.typography.titleSmall,
-                    fontWeight =
-                        FontWeight.SemiBold
-                )
+                    Icon(
+                        imageVector = statusIcon,
+                        contentDescription = null,
+                        tint = statusColor,
+                        modifier = Modifier.size(21.dp)
+                    )
+                }
 
                 Spacer(
-                    modifier = Modifier.height(4.dp)
+                    modifier = Modifier.width(12.dp)
                 )
 
-                Row(
-                    horizontalArrangement =
-                        Arrangement.spacedBy(10.dp)
+                Column(
+                    modifier = Modifier.weight(1f)
                 ) {
 
                     Text(
-                        text =
-                            "IN ${record.checkIn ?: "--:--"}",
-                        color = TextSecondary,
+                        text = record.date,
+                        color = TextPrimary,
                         style =
-                            MaterialTheme.typography.bodySmall
+                            MaterialTheme.typography.titleSmall,
+                        fontWeight =
+                            FontWeight.SemiBold
+                    )
+
+                    Spacer(
+                        modifier = Modifier.height(4.dp)
+                    )
+
+                    Row(
+                        horizontalArrangement =
+                            Arrangement.spacedBy(10.dp)
+                    ) {
+
+                        Text(
+                            text =
+                                "IN ${record.checkIn ?: "--:--"}",
+                            color = TextSecondary,
+                            style =
+                                MaterialTheme.typography.bodySmall
+                        )
+
+                        Text(
+                            text =
+                                "OUT ${record.checkOut ?: "--:--"}",
+                            color = TextSecondary,
+                            style =
+                                MaterialTheme.typography.bodySmall
+                        )
+                    }
+                }
+
+                Column(
+                    horizontalAlignment =
+                        Alignment.End
+                ) {
+
+                    Text(
+                        text = record.status,
+                        color = statusColor,
+                        style =
+                            MaterialTheme.typography.labelMedium,
+                        fontWeight =
+                            FontWeight.Bold
+                    )
+
+                    Spacer(
+                        modifier = Modifier.height(3.dp)
                     )
 
                     Text(
-                        text =
-                            "OUT ${record.checkOut ?: "--:--"}",
+                        text = record.workingHours,
                         color = TextSecondary,
                         style =
-                            MaterialTheme.typography.bodySmall
+                            MaterialTheme.typography.labelSmall
                     )
                 }
             }
 
-            Column(
-                horizontalAlignment =
-                    Alignment.End
+            Spacer(
+                modifier = Modifier.height(10.dp)
+            )
+
+            // =====================================================
+            // SHORT BY
+            // =====================================================
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement =
+                    Arrangement.SpaceBetween
             ) {
 
                 Text(
-                    text = record.status,
-                    color = statusColor,
-                    style =
-                        MaterialTheme.typography.labelMedium,
-                    fontWeight =
-                        FontWeight.Bold
-                )
-
-                Spacer(
-                    modifier = Modifier.height(3.dp)
-                )
-
-                Text(
-                    text = record.workingHours,
+                    text = "Short By",
                     color = TextSecondary,
                     style =
                         MaterialTheme.typography.labelSmall
+                )
+
+                Text(
+                    text = record.shortBy,
+                    color = statusColor,
+                    style =
+                        MaterialTheme.typography.labelSmall,
+                    fontWeight =
+                        FontWeight.SemiBold
                 )
             }
         }
