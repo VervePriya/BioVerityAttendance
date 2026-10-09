@@ -970,7 +970,7 @@ private fun MonthlyAttendanceCard(
                         Modifier.weight(1f),
 
                     title =
-                        "Check-out",
+                        "Not Check-out",
 
                     value =
                         overview.checkOutRequired,

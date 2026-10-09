@@ -852,7 +852,7 @@ private fun AttendanceSummaryCard(
                     modifier =
                         Modifier.weight(1f),
                     value = overview.checkOutRequired,
-                    label = "Check-out",
+                    label = "Not Check-out",
                     icon =
                         Icons.Default.Schedule,
                     iconBackground =
