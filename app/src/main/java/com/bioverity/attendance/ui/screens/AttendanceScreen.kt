@@ -849,16 +849,12 @@ private fun AttendanceSummaryCard(
                 )
 
                 SummaryItem(
-                    modifier =
-                        Modifier.weight(1f),
+                    modifier = Modifier.weight(1f),
                     value = overview.checkOutRequired,
                     label = "Not Check-out",
-                    icon =
-                        Icons.Default.Schedule,
-                    iconBackground =
-                        Color(0xFFFFF8E1),
-                    iconTint =
-                        Color(0xFFC28A00)
+                    icon = Icons.Default.Schedule,
+                    iconBackground = Color(0xFFFFF8E1),
+                    iconTint = Color(0xFFC28A00)
                 )
 
                 SummaryItem(
