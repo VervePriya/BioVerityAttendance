@@ -16,7 +16,7 @@ class ProfileViewModel : ViewModel() {
 
     companion object {
         private const val BASE_URL =
-            "http://127.0.0.1:8000"
+            "http://52.64.92.29:8000/"
     }
 
     private val client = OkHttpClient()
@@ -54,7 +54,7 @@ class ProfileViewModel : ViewModel() {
                 val request =
                     Request.Builder()
                         .url(
-                            "$BASE_URL/employee/$personId"
+                            "${BASE_URL}employee/$personId"
                         )
                         .get()
                         .build()

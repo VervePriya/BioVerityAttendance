@@ -86,7 +86,8 @@ import java.util.concurrent.Executors
 
 
 private const val FACE_API_URL =
-    "http://127.0.0.1:8000"
+
+    "http://52.64.92.29:8000"
 
 
 @OptIn(ExperimentalMaterial3Api::class)
