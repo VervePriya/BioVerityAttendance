@@ -16,7 +16,7 @@ class ProfileViewModel : ViewModel() {
 
     companion object {
         private const val BASE_URL =
-            "http://52.64.92.29:8000/"
+            "https://52.64.92.29/"
     }
 
     private val client = OkHttpClient()

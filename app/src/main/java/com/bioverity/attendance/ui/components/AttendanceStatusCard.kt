@@ -25,7 +25,7 @@ fun AttendanceStatusCard(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Navy
+            containerColor = Teal
         )
     ) {
 
@@ -118,7 +118,8 @@ fun AttendanceStatusCard(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(14.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Teal
+                    containerColor = Color.White,
+                    contentColor = Teal
                 )
             ) {
 

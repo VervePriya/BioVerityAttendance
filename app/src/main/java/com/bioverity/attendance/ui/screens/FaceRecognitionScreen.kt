@@ -87,7 +87,7 @@ import java.util.concurrent.Executors
 
 private const val FACE_API_URL =
 
-    "http://52.64.92.29:8000"
+    "https://52.64.92.29"
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -349,7 +349,7 @@ fun FaceRecognitionScreen(
                     Request.Builder()
 
                         .url(
-                            "$FACE_API_URL/recognize-face"
+                            "${FACE_API_URL.trimEnd('/')}/recognize-face"
                         )
 
                         .post(
@@ -361,7 +361,7 @@ fun FaceRecognitionScreen(
 
                 println(
                     "FACE_API: Sending image to " +
-                            "$FACE_API_URL/recognize-face"
+                            "${FACE_API_URL.trimEnd('/')}/recognize-face"
                 )
 
 

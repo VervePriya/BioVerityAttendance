@@ -946,11 +946,13 @@ class AttendanceViewModel : ViewModel() {
         // ---------------------------------------------------------
 
         for (record in databaseRecords) {
+            Log.d(TAG, "RAW ATTENDANCE TIME = ${record.attendance_time}")
 
             val timestamp =
                 parseDatabaseDateTime(
                     record.attendance_time
                 )
+            Log.d(TAG, "PARSED ATTENDANCE TIME = $timestamp")
 
             if (timestamp == null) {
 

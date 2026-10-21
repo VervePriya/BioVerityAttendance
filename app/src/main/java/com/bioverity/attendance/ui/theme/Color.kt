@@ -9,8 +9,9 @@ val TealLight = Color(0xFFE6F7F7)
 
 val Background = Color(0xFFF6F8FB)
 val CardWhite = Color(0xFFFFFFFF)
+val PrimaryBlue = Color(0xFF2196F3)
 
-val TextPrimary = Color(0xFF172B4D)
+val TextPrimary = Color(0xFF000000)
 val TextSecondary = Color(0xFF6B778C)
 
 val Success = Color(0xFF159A6B)

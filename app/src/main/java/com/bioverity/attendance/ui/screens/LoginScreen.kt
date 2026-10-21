@@ -149,7 +149,7 @@ fun LoginScreen(
                 singleLine = true,
                 enabled = !uiState.isLoading,
                 label = {
-                    Text("Email / Employee ID")
+                    Text("Email")
                 },
                 placeholder = {
                     Text("Enter your email")
