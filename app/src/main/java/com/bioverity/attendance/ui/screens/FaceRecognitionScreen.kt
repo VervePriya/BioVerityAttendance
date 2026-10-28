@@ -87,7 +87,7 @@ import java.util.concurrent.Executors
 
 private const val FACE_API_URL =
 
-    "https://52.64.92.29"
+    "https://bioverity-attendance-api-6ad86f0d.fastapicloud.dev"
 
 
 @OptIn(ExperimentalMaterial3Api::class)

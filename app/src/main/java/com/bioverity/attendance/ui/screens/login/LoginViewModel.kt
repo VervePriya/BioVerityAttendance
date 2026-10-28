@@ -96,10 +96,10 @@ class LoginViewModel(
                         password = password
                     )
                 )
-                android.util.Log.d(
-                    "LOGIN_RESPONSE",
-                    "name=${response.name}, imageUrl=${response.imageUrl}"
-                )
+//                android.util.Log.d(
+//                    "LOGIN_RESPONSE",
+//                    "name=${response.name}, imageUrl=${response.imageUrl}"
+//                )
 
                 if (
                     response.success &&

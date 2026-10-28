@@ -11,6 +11,8 @@ composeBom = "2026.02.01"
 camera = "1.6.2"
 mlkitFace = "16.1.7"
 foundationLayout = "1.12.1"
+googleServices = "4.5.0"
+firebaseCrashlytics = "3.0.8"
 
 
 [libraries]
@@ -41,4 +43,6 @@ androidx-compose-foundation-layout = { group = "androidx.compose.foundation", na
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+google-services = { id = "com.google.gms.google-services", version.ref = "googleServices" }
+firebase-crashlytics = { id = "com.google.firebase.crashlytics", version.ref = "firebaseCrashlytics" }
 
