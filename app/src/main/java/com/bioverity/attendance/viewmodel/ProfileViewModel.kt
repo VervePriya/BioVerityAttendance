@@ -16,7 +16,7 @@ class ProfileViewModel : ViewModel() {
 
     companion object {
         private const val BASE_URL =
-            "https://bioverity-attendance-api-6ad86f0d.fastapicloud.dev"
+            "https://bioverity-attendance-api-6ad86f0d.fastapicloud.dev/"
     }
 
     private val client = OkHttpClient()

@@ -102,6 +102,19 @@ enum class NotificationType {
     LOCATION_VERIFICATION_FAILED,
     SYSTEM_NOTIFICATION
 }
+private fun formatSriLankanTime(time: String): String {
+    return try {
+        val instant = java.time.Instant.parse(time)
+
+        java.time.format.DateTimeFormatter
+            .ofPattern("hh.mma", java.util.Locale.ENGLISH)
+            .withZone(java.time.ZoneId.of("Asia/Colombo"))
+            .format(instant)
+            .lowercase()
+    } catch (e: Exception) {
+        time
+    }
+}
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -608,8 +621,8 @@ private fun NotificationCard(
 
                     Text(
 
-                        text =
-                            notification.time,
+                        text =formatSriLankanTime
+                            (notification.time),
 
                         fontSize = 11.sp,
 

@@ -536,86 +536,58 @@ class NotificationViewModel : ViewModel() {
             return ""
         }
 
-
         return try {
 
-            var normalized =
-                timestamp.trim()
-
+            var normalized = timestamp.trim()
 
             if (
                 normalized.contains(" ") &&
                 !normalized.contains("T")
             ) {
-
-                normalized =
-                    normalized.replaceFirst(
-                        " ",
-                        "T"
-                    )
-            }
-
-
-            if (
-                normalized.endsWith("+00")
-            ) {
-
-                normalized =
-                    normalized.dropLast(3) +
-                            "+00:00"
-            }
-
-
-            val instant =
-                Instant.parse(
-                    normalized
+                normalized = normalized.replaceFirst(
+                    " ",
+                    "T"
                 )
+            }
 
+            if (normalized.endsWith("+00")) {
+                normalized =
+                    normalized.dropLast(3) + "+00:00"
+            }
+            android.util.Log.d(
+                "NOTIFICATION_TIME",
+                "Original timestamp: $timestamp | Normalized: $normalized"
+            )
 
+            val instant = Instant.parse(normalized)
+
+            // Subtract 5 hours 30 minutes
             instant
-                .atZone(
-                    sriLankaZone
-                )
-                .format(
-                    notificationTimeFormatter
-                )
+                .minusSeconds(19800)
+                .atZone(sriLankaZone)
+                .format(notificationTimeFormatter)
 
         } catch (e: Exception) {
 
-            // Try as Sri Lanka local time.
-
+            // Handle Sri Lankan local timestamps
             try {
 
-                var localValue =
-                    timestamp.trim()
-
+                var localValue = timestamp.trim()
 
                 if (
                     localValue.contains(" ") &&
                     !localValue.contains("T")
                 ) {
-
-                    localValue =
-                        localValue.replaceFirst(
-                            " ",
-                            "T"
-                        )
+                    localValue = localValue.replaceFirst(
+                        " ",
+                        "T"
+                    )
                 }
 
+                LocalDateTime.parse(localValue)
+                    .format(notificationTimeFormatter)
 
-                val localDateTime =
-                    LocalDateTime.parse(
-                        localValue
-                    )
-
-
-                localDateTime.format(
-                    notificationTimeFormatter
-                )
-
-            } catch (
-                localException: Exception
-            ) {
+            } catch (localException: Exception) {
 
                 timestamp
             }
