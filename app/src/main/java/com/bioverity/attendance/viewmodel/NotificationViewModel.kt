@@ -562,6 +562,7 @@ class NotificationViewModel : ViewModel() {
             val instant = Instant.parse(normalized)
 
             // Subtract 5 hours 30 minutes
+
             instant
                 .minusSeconds(19800)
                 .atZone(sriLankaZone)
