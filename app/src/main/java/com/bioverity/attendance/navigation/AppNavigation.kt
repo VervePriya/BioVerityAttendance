@@ -24,6 +24,7 @@ import com.bioverity.attendance.ui.screens.LeaveApprovalScreen
 import com.bioverity.attendance.ui.screens.LeaveScreen
 import com.bioverity.attendance.ui.screens.NotificationsScreen
 import com.bioverity.attendance.ui.screens.ProfileScreen
+import com.bioverity.attendance.ui.screens.GeminiAssistantScreen
 
 import com.bioverity.attendance.ui.screens.login.ForgotPasswordScreen
 import com.bioverity.attendance.ui.screens.login.ResetPasswordScreen
@@ -277,6 +278,9 @@ fun AppNavigation(
     var showLeaveApproval by remember {
         mutableStateOf(false)
     }
+    var showGeminiAssistant by remember {
+        mutableStateOf(false)
+    }
 
 
     // ----------------------------------------------------
@@ -419,6 +423,22 @@ fun AppNavigation(
             return
         }
     }
+    // ----------------------------------------------------
+    // GEMINI AI ASSISTANT SCREEN
+    // ----------------------------------------------------
+
+    if (showGeminiAssistant) {
+
+        GeminiAssistantScreen(
+
+            onBack = {
+
+                showGeminiAssistant = false
+            }
+        )
+
+        return
+    }
 
 
     // ----------------------------------------------------
@@ -530,6 +550,10 @@ fun AppNavigation(
                 onNotificationsClick = {
 
                     showNotifications = true
+                },
+                onGeminiClick = {
+
+                    showGeminiAssistant = true
                 }
             )
         }

@@ -26,6 +26,8 @@ import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Part
 import retrofit2.http.Path
+import com.bioverity.attendance.data.model.GeminiRequest
+import com.bioverity.attendance.data.model.GeminiResponse
 
 interface FaceApiService {
 
@@ -135,6 +137,15 @@ interface FaceApiService {
     suspend fun rejectLeave(
         @Path("leave_id") leaveId: String
     ): LeaveResponse
+
+    // ---------------------------------------------------------
+    // GEMINI AI ASSISTANT
+    // ---------------------------------------------------------
+
+    @POST("gemini/ask")
+    suspend fun askGemini(
+        @Body request: GeminiRequest
+    ): GeminiResponse
 
 
 

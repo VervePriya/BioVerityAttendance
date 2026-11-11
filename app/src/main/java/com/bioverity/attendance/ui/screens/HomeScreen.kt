@@ -72,6 +72,8 @@ import kotlinx.coroutines.delay
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.unit.sp
 
 
 private val SriLankaZone: ZoneId =
@@ -93,6 +95,7 @@ fun HomeScreen(
     viewModel: AttendanceViewModel,
     onNavigate: (Int) -> Unit,
     onNotificationsClick: () -> Unit,
+    onGeminiClick: () -> Unit,
     locationViewModel: LocationViewModel =
         androidx.lifecycle.viewmodel.compose.viewModel()
 ) {
@@ -516,6 +519,76 @@ fun HomeScreen(
 
                     onNavigate(3)
                 }
+            )
+            // =================================================
+            // BIOVERITY AI ASSISTANT
+            // =================================================
+
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        onGeminiClick()
+                    },
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = CardWhite
+                ),
+                elevation = CardDefaults.cardElevation(
+                    defaultElevation = 3.dp
+                )
+            ) {
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(18.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+
+                    Icon(
+                        imageVector = Icons.Filled.Verified,
+                        contentDescription = "AI Assistant",
+                        tint = Teal,
+                        modifier = Modifier.size(36.dp)
+                    )
+
+                    Spacer(
+                        modifier = Modifier.width(14.dp)
+                    )
+
+                    Column(
+                        modifier = Modifier.weight(1f)
+                    ) {
+
+                        Text(
+                            text = "BioVerity AI Assistant",
+                            fontWeight = FontWeight.Bold,
+                            color = TextPrimary,
+                            fontSize = 16.sp
+                        )
+
+                        Spacer(
+                            modifier = Modifier.height(4.dp)
+                        )
+
+                        Text(
+                            text = "Ask questions and get intelligent assistance",
+                            color = TextSecondary,
+                            fontSize = 12.sp
+                        )
+                    }
+
+                    Icon(
+                        imageVector = Icons.Filled.ArrowForward,
+                        contentDescription = "Open AI Assistant",
+                        tint = Navy
+                    )
+                }
+            }
+
+            Spacer(
+                modifier = Modifier.height(22.dp)
             )
 
 

@@ -14,6 +14,7 @@ object AppSession {
     private const val KEY_EMAIL = "email"
     private const val KEY_IMAGE_URL = "image_url"
     private const val KEY_ROLE = "role"
+    private const val KEY_ACCESS_TOKEN = "access_token"
 
     private fun preferences(context: Context) =
         context.getSharedPreferences(
@@ -28,7 +29,8 @@ object AppSession {
         name: String,
         email: String,
         imageUrl: String? = null,
-        role: String? = null
+        role: String? = null,
+        accessToken: String? = null
     ) {
         preferences(context)
             .edit()
@@ -39,6 +41,7 @@ object AppSession {
             .putString(KEY_EMAIL, email)
             .putString(KEY_IMAGE_URL, imageUrl)
             .putString(KEY_ROLE, role?.uppercase())
+            .putString(KEY_ACCESS_TOKEN, accessToken)
             .apply()
     }
 
@@ -69,6 +72,10 @@ object AppSession {
     fun getRole(context: Context): String? =
         preferences(context)
             .getString(KEY_ROLE, null)
+
+    fun getAccessToken(context: Context): String? =
+        preferences(context)
+            .getString(KEY_ACCESS_TOKEN, null)
 
     fun isAdmin(context: Context): Boolean =
         getRole(context) == "ADMIN"

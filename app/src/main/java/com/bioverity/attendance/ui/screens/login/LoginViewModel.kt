@@ -116,6 +116,9 @@ class LoginViewModel(
                         email = response.email ?: email,
                         imageUrl = response.imageUrl,
                         role=response.role
+                        ,
+                        accessToken = response.accessToken
+
                     )
 
                     _uiState.value = _uiState.value.copy(
