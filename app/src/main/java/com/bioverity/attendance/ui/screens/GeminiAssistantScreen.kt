@@ -31,6 +31,9 @@ import androidx.compose.ui.unit.sp
 import com.bioverity.attendance.data.api.ApiClient
 import com.bioverity.attendance.data.model.GeminiRequest
 import kotlinx.coroutines.launch
+import androidx.compose.ui.platform.LocalContext
+import com.bioverity.attendance.data.session.AppSession
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,6 +46,7 @@ fun GeminiAssistantScreen(
     var isLoading by remember { mutableStateOf(false) }
 
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     Scaffold(
         containerColor = Color(0xFFF6F8FB),
@@ -107,12 +111,29 @@ fun GeminiAssistantScreen(
                         answer = ""
                         error = ""
 
+
                         try {
+                            val accessToken = AppSession.getAccessToken(context)
+
+                            if (accessToken.isNullOrBlank()) {
+                                error = "Your login session has expired. Please log in again."
+                                return@launch
+                            }
+
                             val response = ApiClient.api.askGemini(
                                 GeminiRequest(
-                                    prompt = question.trim()
+                                    prompt = question.trim(),
+                                    access_token = accessToken
                                 )
                             )
+
+                            if (response.success) {
+                                answer = response.answer ?: "No answer received."
+                            } else {
+                                error = "Unable to generate a response."
+                            }
+
+
 
                             if (response.success) {
                                 answer = response.answer

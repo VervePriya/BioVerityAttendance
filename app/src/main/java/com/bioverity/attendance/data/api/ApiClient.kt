@@ -5,7 +5,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 
 object ApiClient {
 
-    private const val BASE_URL =  "https://bioverity-attendance-api-6ad86f0d.fastapicloud.dev"
+    private const val BASE_URL =  "https://bioverity-attendance-api-6ad86f0d.fastapicloud.dev/"
 
     val api: FaceApiService by lazy {
         Retrofit.Builder()
