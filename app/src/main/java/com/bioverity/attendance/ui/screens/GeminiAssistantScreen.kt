@@ -120,12 +120,14 @@ fun GeminiAssistantScreen(
                                 return@launch
                             }
 
+
                             val response = ApiClient.api.askGemini(
-                                GeminiRequest(
-                                    prompt = question.trim(),
-                                    access_token = accessToken
+                                authorization = "Bearer $accessToken",
+                                request = GeminiRequest(
+                                    prompt = question.trim()
                                 )
                             )
+
 
                             if (response.success) {
                                 answer = response.answer ?: "No answer received."

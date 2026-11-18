@@ -17,6 +17,7 @@ import com.bioverity.attendance.data.model.ResetPasswordRequest
 import com.bioverity.attendance.data.model.ResetPasswordResponse
 
 import okhttp3.MultipartBody
+import retrofit2.http.Header
 
 import retrofit2.http.Body
 import retrofit2.http.DELETE
@@ -142,10 +143,13 @@ interface FaceApiService {
     // GEMINI AI ASSISTANT
     // ---------------------------------------------------------
 
+
     @POST("gemini/ask")
     suspend fun askGemini(
+        @Header("Authorization") authorization: String,
         @Body request: GeminiRequest
     ): GeminiResponse
+
 
 
 
