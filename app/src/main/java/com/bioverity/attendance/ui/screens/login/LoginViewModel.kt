@@ -117,7 +117,8 @@ class LoginViewModel(
                         imageUrl = response.imageUrl,
                         role=response.role
                         ,
-                        accessToken = response.accessToken
+                        accessToken = response.accessToken,
+                        refreshToken = response.refreshToken
 
                     )
 

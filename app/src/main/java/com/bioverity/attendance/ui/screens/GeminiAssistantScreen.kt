@@ -33,6 +33,13 @@ import com.bioverity.attendance.data.model.GeminiRequest
 import kotlinx.coroutines.launch
 import androidx.compose.ui.platform.LocalContext
 import com.bioverity.attendance.data.session.AppSession
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.CornerRadius
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -44,6 +51,7 @@ fun GeminiAssistantScreen(
     var answer by remember { mutableStateOf("") }
     var error by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
+    val answerScrollState = rememberScrollState()
 
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -184,7 +192,46 @@ fun GeminiAssistantScreen(
                     )
                 ) {
                     Column(
-                        modifier = Modifier.padding(16.dp)
+                        modifier = Modifier
+                            .padding(16.dp)
+                            .heightIn(max = 320.dp)
+                            .drawWithContent {
+                                drawContent()
+
+                                // Show scrollbar only when content is scrollable
+                                if (answerScrollState.maxValue > 0) {
+
+                                    val scrollbarWidth = 4.dp.toPx()
+                                    val scrollbarHeight = (
+                                            size.height * size.height /
+                                                    (size.height + answerScrollState.maxValue)
+                                            ).coerceAtLeast(24.dp.toPx())
+                                        .coerceAtMost(size.height)
+
+                                    val scrollFraction =
+                                        answerScrollState.value.toFloat() /
+                                                answerScrollState.maxValue.toFloat()
+
+                                    val scrollbarTop =
+                                        (size.height - scrollbarHeight) * scrollFraction
+
+                                    drawRoundRect(
+                                        color = Color(0xFF2F6B9A),
+                                        topLeft = Offset(
+                                            x = size.width - scrollbarWidth - 2.dp.toPx(),
+                                            y = scrollbarTop
+                                        ),
+                                        size = Size(
+                                            width = scrollbarWidth,
+                                            height = scrollbarHeight
+                                        ),
+                                        cornerRadius = CornerRadius(
+                                            scrollbarWidth / 2
+                                        )
+                                    )
+                                }
+                            }
+                            .verticalScroll(answerScrollState)
                     ) {
                         Text(
                             text = "AI Response",

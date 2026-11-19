@@ -8,6 +8,8 @@ data class LoginResponse(
     val success: Boolean,
     @SerializedName("access_token")
     val accessToken: String? = null,
+    @SerializedName("refresh_token")
+    val refreshToken: String? = null,
 
 
     @SerializedName("reason")
